@@ -7,6 +7,13 @@ before:
     - go mod tidy
     - go mod download
 
+upx:
+  - enabled: true
+    goos:
+      - linux
+      - windows
+    compress: "5"
+
 builds:
   - main: main.go
     binary: qbit
@@ -35,9 +42,9 @@ changelog:
   groups:
     - title: "New Features"
       regexp: "^feat:"
-    - title: "Bug Fixes"
+    - title: "Bug & Fixes"
       regexp: "^fix:"
-    - title: "Other Changes"
+    - title: "Changes"
       regexp: ".*"
   filters:
     exclude:

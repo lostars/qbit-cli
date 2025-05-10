@@ -1,0 +1,44 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.24'
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y zip
+
+      - name: Make release
+        run: make release
+
+      - name: Generate changelog
+        run: |
+          mkdir -p scripts
+          curl -sSL https://raw.githubusercontent.com/yourusername/yourrepo/main/scripts/generate_changelog.sh -o scripts/generate_changelog.sh
+          chmod +x scripts/generate_changelog.sh
+          ./scripts/generate_changelog.sh ${GITHUB_REF#refs/tags/} > RELEASE_NOTES.md
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            bin/*
+          body_path: RELEASE_NOTES.md
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -1,0 +1,71 @@
+package cmd
+
+import (
+	"fmt"
+	"github.com/spf13/cobra"
+	"net/url"
+	"qbit-cli/internal/api"
+	"qbit-cli/pkg/utils"
+	"strconv"
+)
+
+//https://github.com/qbittorrent/qBittorrent/wiki/WebUI-API-(qBittorrent-5.0)#get-torrent-list
+
+func TorrentList() *cobra.Command {
+	listCmd := &cobra.Command{
+		Use:     "list [flags]",
+		Short:   "List torrents",
+		Example: `qbit torrent list --filter=downloading --category=abc`,
+	}
+
+	var (
+		filter, category, hashes, tag string
+		limit, offset                 uint32
+	)
+
+	listCmd.Flags().StringVar(&filter, "filter", "", "state filter")
+	listCmd.Flags().StringVar(&category, "category", "", "category filter")
+	listCmd.Flags().StringVar(&tag, "tag", "", "tag filter")
+	listCmd.Flags().StringVar(&hashes, "hashes", "", "hash filter separated by |'")
+	listCmd.Flags().Uint32Var(&limit, "limit", 0, "results limit")
+	listCmd.Flags().Uint32Var(&offset, "offset", 0, "results offset")
+
+	listCmd.RunE = func(cmd *cobra.Command, args []string) error {
+		var params = url.Values{}
+		if filter != "" {
+			params.Set("filter", filter)
+		}
+		if category != "" {
+			// category must be encoded
+			params.Set("category", url.QueryEscape(category))
+		}
+		if tag != "" {
+			// tag must be encoded
+			params.Set("tag", url.QueryEscape(tag))
+		}
+		if hashes != "" {
+			params.Set("hashes", hashes)
+		}
+		if limit > 0 {
+			params.Set("limit", strconv.FormatUint(uint64(limit), 10))
+		}
+		if offset > 0 {
+			params.Set("offset", strconv.FormatUint(uint64(offset), 10))
+		}
+
+		torrentList := api.TorrentList(params)
+		if torrentList == nil {
+			return nil
+		}
+
+		fmt.Printf("total size: %d\n", len(torrentList))
+		for _, t := range torrentList {
+			fmt.Printf("name:[%s], hash:[%s], category:[%s], tags:[%s] state:[%s], progress:[%v]\n",
+				utils.TruncateStringFromStart(t.Name, 20), t.Hash, t.Category, t.Tags, t.State, t.Progress)
+		}
+
+		return nil
+	}
+
+	return listCmd
+}

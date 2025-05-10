@@ -1,0 +1,11 @@
+server:
+  host: ""
+  username: ""
+  password: ""
+torrent:
+  default-save-path: ""
+  default-save-category: ""
+  default-save-tags: ""
+jackett:
+  host: ""
+  api-key: ""

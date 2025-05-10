@@ -1,0 +1,147 @@
+package cmd
+
+import (
+	"fmt"
+	"github.com/spf13/cobra"
+	"net/url"
+	"path/filepath"
+	"qbit-cli/internal/api"
+	"regexp"
+	"strings"
+)
+
+func RenameJP() *cobra.Command {
+
+	jp := &cobra.Command{
+		Use:   "jp [flags]",
+		Short: "Auto rename jp video filename and directory",
+		Long: `You may use [flags] to filter you JP torrents.
+Only support torrent that contains one single jp video code.
+Only rename files those are selected to download.
+Torrent file struct supported as follows(file extension not mattered):
+a.mp4
+folder/a.mp4
+`,
+	}
+
+	var (
+		filter, category, hashes, tag string
+	)
+
+	jp.Flags().StringVar(&filter, "filter", "", "state filter")
+	jp.Flags().StringVar(&category, "category", "", "category filter")
+	jp.Flags().StringVar(&tag, "tag", "", "tag filter")
+	jp.Flags().StringVar(&hashes, "hashes", "", "hash filter separated by |'")
+
+	jp.RunE = func(cmd *cobra.Command, args []string) error {
+		params := url.Values{}
+		if filter != "" {
+			params.Set("filter", filter)
+		}
+		if tag != "" {
+			params.Set("tag", url.QueryEscape(tag))
+		}
+		if hashes != "" {
+			params.Set("hashes", url.QueryEscape(hashes))
+		}
+		if category != "" {
+			params.Set("category", url.QueryEscape(category))
+		}
+
+		torrentList := api.TorrentList(params)
+		if torrentList == nil {
+			return nil
+		}
+
+		fmt.Printf("total size: %d\n", len(torrentList))
+		for _, t := range torrentList {
+			// get torrent files
+			fileList := api.TorrentFiles(url.Values{"hash": {t.Hash}})
+			if fileList == nil {
+				continue
+			}
+
+			for _, file := range fileList {
+				// priority = 0 means file is not selected to download
+				if file.Priority == 0 {
+					continue
+				}
+
+				files := strings.Split(file.Name, "/")
+				l := len(files)
+				if l == 1 {
+					jpCode := parseJPName(files[0], "")
+					if jpCode == "" {
+						continue
+					}
+					if newPath := jpCode + filepath.Ext(files[0]); newPath != files[0] {
+						if api.TorrentRenameFile(t.Hash, file.Name, newPath) != nil {
+							fmt.Printf("hash:[%s] new path: %s rename file failed: %v\n", t.Hash, newPath)
+						}
+					}
+				} else if l == 2 {
+					newFolder := parseJPCode(files[1], files[0])
+					if newFolder == "" {
+						continue
+					}
+					// rename only when name changed
+					if newFolder != files[0] {
+						if err := api.TorrentRenameFolder(t.Hash, files[0], newFolder); err != nil {
+							fmt.Printf("[%s] %s -> %s renameFolder failed\n", t.Hash, files[0], newFolder)
+						}
+					}
+					newPath := newFolder + "/" + parseJPName(files[1], files[0]) + filepath.Ext(files[1])
+					if newPath != file.Name {
+						if err := api.TorrentRenameFile(t.Hash, file.Name, newPath); err != nil {
+							fmt.Printf("[%s] %s -> %s renameFile failed\n", t.Hash, file.Name, newPath)
+						}
+					}
+				}
+			}
+		}
+
+		return nil
+	}
+
+	return jp
+}
+
+func parseJPCode(fileName string, folder string) string {
+	matches := JPCodeRegex.FindStringSubmatch(fileName)
+	jpCode := ""
+	if len(matches) <= 1 {
+		matches = JPCodeRegex.FindStringSubmatch(folder)
+		if len(matches) <= 1 {
+			return ""
+		}
+	}
+	jpCode = matches[1]
+
+	matches = JP4KRegex.FindStringSubmatch(fileName)
+	if len(matches) > 2 {
+		jpCode += "-" + matches[2]
+	}
+	return jpCode
+}
+
+func parseJPName(fileName string, folder string) string {
+	jpCode := parseJPCode(fileName, folder)
+	if jpCode == "" {
+		return ""
+	}
+
+	if matches := JPPartsRegex.FindStringSubmatch(fileName); len(matches) > 2 {
+		jpCode += "-cd" + matches[2]
+	}
+
+	if JPCNRegex.MatchString(fileName) {
+		jpCode += "-C"
+	}
+
+	return jpCode
+}
+
+var JPCodeRegex = regexp.MustCompile(`([a-zA-Z]{2,5}-[0-9]{3,5}|FC2-PPV-\d{5,})`)
+var JP4KRegex = regexp.MustCompile(`([-\[])(4[kK])`)
+var JPPartsRegex = regexp.MustCompile(`\d+([-_]|-cd)([1-5])`)
+var JPCNRegex = regexp.MustCompile(`\d+(-[cC]|ch)`)

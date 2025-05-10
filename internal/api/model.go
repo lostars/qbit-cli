@@ -1,0 +1,68 @@
+package api
+
+type SearchResults struct {
+	Results []SearchDetail `json:"results"`
+	Status  string         `json:"status"`
+	Total   uint32         `json:"total"`
+}
+
+type SearchDetail struct {
+	DescLink   string `json:"descrLink"`
+	FileName   string `json:"fileName"`
+	FileSize   uint64 `json:"fileSize"`
+	FileURL    string `json:"fileUrl"`
+	NBLeechers uint32 `json:"nbLeechers"`
+	NBSeeders  uint32 `json:"nbSeeders"`
+	SiteUrl    string `json:"siteUrl"`
+}
+
+type SearchResult struct {
+	ID uint32 `json:"id"`
+}
+
+type Torrent struct {
+	Hash     string  `json:"hash"`
+	Name     string  `json:"name"`
+	Category string  `json:"category"`
+	State    string  `json:"state"`
+	Progress float32 `json:"progress"`
+	Tags     string  `json:"tags"`
+}
+
+type TorrentFile struct {
+	Name     string  `json:"name"`
+	Priority uint8   `json:"priority"`
+	Progress float32 `json:"progress"`
+}
+
+type RssRule struct {
+	Enabled                   bool     `json:"enabled"`
+	MustContain               string   `json:"mustContain"`
+	MustNotContain            string   `json:"mustNotContain"`
+	UseRegex                  bool     `json:"useRegex"`
+	EpisodeFilter             string   `json:"episodeFilter"`
+	PreviouslyMatchedEpisodes []string `json:"previouslyMatchedEpisodes"`
+	AffectedFeeds             []string `json:"affectedFeeds"`
+	IgnoreDays                int32    `json:"ignoreDays"`
+	LastMatch                 string   `json:"lastMatch"`
+	AddPaused                 bool     `json:"addPaused"`
+	AssignedCategory          string   `json:"assignedCategory"`
+	SavePath                  string   `json:"savePath"`
+}
+
+type SearchPlugin struct {
+	Enabled             bool   `json:"enabled"`
+	FullName            string `json:"fullName"`
+	Name                string `json:"name"`
+	SupportedCategories []struct {
+		ID   string `json:"id"`
+		Name string `json:"name"`
+	} `json:"supportedCategories"`
+	Url     string `json:"url"`
+	Version string `json:"version"`
+}
+
+type RssSub struct {
+	UID string `json:"uid"`
+	URL string `json:"url"`
+}

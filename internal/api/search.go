@@ -27,7 +27,6 @@ func SearchStart(params url.Values) (SearchResult, error) {
 		return result, errors.New("user has reached the limit of max Running searches (currently set to 5)")
 	}
 
-	err = client.ParseJSON(resp, &result)
 	if err := client.ParseJSON(resp, &result); err != nil {
 		return result, err
 	}

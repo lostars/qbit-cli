@@ -9,7 +9,7 @@ import (
 func RssRule() *cobra.Command {
 	var cmd = &cobra.Command{
 		Use:   "rule [command]",
-		Short: "RSS Rule commands",
+		Short: "Manage RSS rules",
 	}
 
 	cmd.AddCommand(RuleList())

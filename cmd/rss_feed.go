@@ -11,7 +11,7 @@ import (
 func RssFeed() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "feed [flags]",
-		Short:   "add feed to qBittorrent",
+		Short:   "Add subscription",
 		Example: "feed url1 url2 url3 --rule=test --path=movie",
 		Args: func(cmd *cobra.Command, args []string) error {
 			if len(args) < 1 {

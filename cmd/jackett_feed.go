@@ -10,7 +10,7 @@ import (
 func JackettFeed() *cobra.Command {
 	var cmd = &cobra.Command{
 		Use:   "feed <keywords> [flags]",
-		Short: "add jackett feed to qBittorrent",
+		Short: "Add jackett feed to qBittorrent",
 		Long: `Make sure your qBittorrent is configured properly for Jackett.
 It will add several feeds depend on your keywords size.
 `,

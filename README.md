@@ -19,8 +19,9 @@ Or you can download the binary from release page if exists.
 
 ## Configuration
 
-You can use `-c /path/to/config.yaml` or `--config=/path/to/config.yaml` 
-or just place the `config.yaml` next to the executable file.
+You can use `-c /path/to/config.yaml` or `--config=/path/to/config.yaml`.
+
+Default config location is `~/.config/qbit-cli/config.yaml` or same as executable file named `config.yaml`.
 
 **Attention: take good care of your password**
 ```yaml
@@ -33,52 +34,57 @@ torrent:
   default-save-category: "movie"
 #  different tags separated by ,
   default-save-tags: "act,love"
+jackett:
+  host: ""
+  api-key: ""
 ```
 
 ## Commands
 
-You can use `qbit -h` for details, README file may update slowly.
+You can use `qbit -h` `qbit [command] -h` for details.
 
-### [torrent]
-
+### torrent
 ```
-Usage:
-  qbit torrent [command]
-
-Available Commands:
-  add         add torrent, you can add one or more torrents seperated by blank space
-  files       List torrent files by torrent hash
-  list        List torrents
+list    # torrent list
+add     # add torrents
+files   # list torrent files
+search  # search torrents through qBittorrent plugins and automatically download
 ```
 
-`qbit torrent [command] -h` for more information
+**search**
+You can use `--auto-download=true` `--torrent-regex=batman` to download torrents automatically.
+`qbit torrent search -h` for more details.
 
-### [search]
-
-**Attention: auto download is disabled by default.**
+### rss
 
 ```
-Usage:
-  qbit search <keyword> [flags]
-
-Examples:
-qbit search <keyword> --category=movie --plugins=bt4g
-
-Flags:
-      --auto-download          Attention: if true, it will auto download all the torrents that filter by torrent-regex
-      --auto-management        whether enable torrent auto management default is true, valid only when auto download enabled (default true)
-      --category string        category of plugin(define by plugin) (default "all")
-  -h, --help                   help for search
-      --plugins string         plugins a|b|c, all and enabled also supported (default "enabled")
-      --save-category string   torrent save category, valid only when auto download enabled
-      --save-path string       torrent save path, valid only when auto download enabled
-      --save-tags string       torrent save tags, valid only when auto download enabled
-      --torrent-regex string   torrent file name filter
+feed    # add feed
+rule    # rule -h for details
+sub     # sub -h for details
 ```
 
-### [rename]
+### rename
 
-**jp sub command**
+```
+jp      # auto rename you JP torrents rename jp -h for more details
+```
 
-Automatically rename your JP torrent files. 
-`qbit rename jp -h` for more details.
+**jp**
+
+Supports: 
+* `4k` tag
+* Emby `cd1` file parts
+* `-C` Chinese subtitle tag
+* single file or `test/test.mp4`
+
+### plugin
+
+```
+list    # plugin list
+```
+
+### jackett
+
+```
+feed    # add jackett feed to qBittorrent
+```

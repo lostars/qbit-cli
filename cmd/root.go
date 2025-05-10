@@ -10,19 +10,22 @@ func Execute() {
 
 	rootCmd := &cobra.Command{
 		Use:   "qbit",
-		Short: "qbit is a CLI for qbittorrent",
+		Short: "qbit is a CLI for qBittorrent",
 		Long: `Developed and tested on qBittorrent webui api 5.0.
+
 You may found working properly on other version of qBittorrent.
 You can find webui api here:
 https://github.com/qbittorrent/qBittorrent/wiki/WebUI-API-(qBittorrent-5.0)
+
+Default config location:
+~/.config/qbit-cli/config.yaml
+same as executable file named config.yaml
 `,
 		SilenceUsage: true,
 	}
 
-	rootCmd.PersistentFlags().StringVarP(&config.CfgPath, "config", "c", "",
-		"qbit config file path(default is config.yaml at the same directory as executable file)")
+	rootCmd.PersistentFlags().StringVarP(&config.CfgPath, "config", "c", "", "qbit config file path")
 
-	rootCmd.AddCommand(SearchCmd())
 	rootCmd.AddCommand(TorrentCmd())
 	rootCmd.AddCommand(RenameCmd())
 	rootCmd.AddCommand(RssCmd())

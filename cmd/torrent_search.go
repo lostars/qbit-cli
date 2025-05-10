@@ -13,7 +13,7 @@ import (
 
 // https://github.com/qbittorrent/qBittorrent/wiki/WebUI-API-(qBittorrent-5.0)#search
 
-func SearchCmd() *cobra.Command {
+func TorrentSearch() *cobra.Command {
 
 	var searchCmd = &cobra.Command{
 		Use:   "search <keyword> [flags]",
@@ -23,7 +23,7 @@ and ensure that torrent-regex works properly to void unnecessary downloads.
 Search results will not print when auto download enabled.
 Auto download calls "qbit torrent add ...", which means it also reads default save values of torrent part on config file
 `,
-		Example: `qbit search <keyword> --category=movie --plugins=bt4g`,
+		Example: `qbit torrent search <keyword> --category=movie --plugins=bt4g`,
 		Args: func(cmd *cobra.Command, args []string) error {
 			if len(args) < 1 {
 				return errors.New("requires a keyword")

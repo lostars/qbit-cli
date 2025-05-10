@@ -23,7 +23,7 @@ func RssSub() *cobra.Command {
 func SubList() *cobra.Command {
 	var cmd = &cobra.Command{
 		Use:   "list",
-		Short: "sub list",
+		Short: "Manage subscription",
 	}
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {

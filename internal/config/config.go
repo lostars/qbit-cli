@@ -1,6 +1,7 @@
 package config
 
 import (
+	"errors"
 	"gopkg.in/yaml.v3"
 	"os"
 	"path/filepath"
@@ -30,20 +31,43 @@ type Config struct {
 	} `yaml:"jackett"`
 }
 
+func loadDefaultConfig() []byte {
+	home, _ := os.UserHomeDir()
+	if home != "" {
+		// load from user home .config/qbit-cli/config.yaml
+		CfgPath = filepath.Join(home, ".config", "qbit-cli", "config.yaml")
+		file, _ := os.ReadFile(CfgPath)
+		if file != nil {
+			return file
+		}
+	}
+	execPath, _ := os.Executable()
+	if execPath != "" {
+		CfgPath = filepath.Join(filepath.Dir(execPath), "config.yaml")
+		file, _ := os.ReadFile(CfgPath)
+		if file != nil {
+			return file
+		}
+	}
+	return nil
+}
+
 func GetConfig() (*Config, error) {
 	if config != nil {
 		return config, nil
 	}
+	var file []byte
 	if CfgPath == "" {
-		// load from the path where the command exists
-		execPath, _ := os.Executable()
-		if execPath != "" {
-			CfgPath = filepath.Join(filepath.Dir(execPath), "config.yaml")
+		file = loadDefaultConfig()
+		if file == nil {
+			return nil, errors.New("default config not found")
 		}
-	}
-	file, err := os.ReadFile(CfgPath)
-	if err != nil {
-		return nil, err
+	} else {
+		f, err := os.ReadFile(CfgPath)
+		if err != nil {
+			return nil, err
+		}
+		file = f
 	}
 
 	cfg := Config{}

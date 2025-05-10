@@ -1,44 +1,35 @@
-name: Release
+name: goreleaser
 
 on:
   push:
     tags:
       - 'v*'
 
+env:
+  GO_VERSION: '1.24'
+
 jobs:
-  build:
+
+  release:
+    name: Build and publish binaries
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
+      -
+        name: Checkout
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-
-      - name: Set up Go
-        uses: actions/setup-go@v4
+      -
+        name: Set up Go
+        uses: actions/setup-go@v5
         with:
-          go-version: '1.24'
-
-      - name: Install dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y zip
-
-      - name: Make release
-        run: make release
-
-      - name: Generate changelog
-        run: |
-          mkdir -p scripts
-          curl -sSL https://raw.githubusercontent.com/yourusername/yourrepo/main/scripts/generate_changelog.sh -o scripts/generate_changelog.sh
-          chmod +x scripts/generate_changelog.sh
-          ./scripts/generate_changelog.sh ${GITHUB_REF#refs/tags/} > RELEASE_NOTES.md
-
-      - name: Create Release
-        uses: softprops/action-gh-release@v1
+          go-version: ${{ env.GO_VERSION }}
+          cache: true
+      -
+        name: Run GoReleaser
+        uses: goreleaser/goreleaser-action@v6
         with:
-          files: |
-            bin/*
-          body_path: RELEASE_NOTES.md
+          version: "~> v2"
+          args: release --clean
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

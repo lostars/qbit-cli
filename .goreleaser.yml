@@ -1,10 +1,10 @@
 version: 2
-
+project_name: qbit
 env:
   - GO111MODULE=on
-
 before:
   hooks:
+    - go mod tidy
     - go mod download
 
 builds:
@@ -19,17 +19,26 @@ builds:
     flags:
       - -trimpath
     ldflags:
-      - s -w -X main.Version={{.Version}}
+      - -s -w -X main.Version={{.Version}}
 
-release:
-  prerelease: auto
-
+archives:
+  - name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    format_overrides:
+      - goos: windows
+        formats: ['zip']
 checksum:
   name_template: "sha256sums.txt"
   algorithm: sha256
 
 changelog:
   sort: asc
+  groups:
+    - title: "New Features"
+      regexp: "^feat:"
+    - title: "Bug Fixes"
+      regexp: "^fix:"
+    - title: "Other Changes"
+      regexp: ".*"
   filters:
     exclude:
       - '^docs:'

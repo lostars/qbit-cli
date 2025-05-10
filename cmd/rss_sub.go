@@ -10,7 +10,7 @@ import (
 func RssSub() *cobra.Command {
 	var cmd = &cobra.Command{
 		Use:   "sub [command]",
-		Short: "sub management",
+		Short: "Manage subscriptions",
 		Long:  `If you want add feed, use "rss feed" enhanced command`,
 	}
 

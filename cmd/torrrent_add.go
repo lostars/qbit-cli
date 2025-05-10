@@ -13,7 +13,7 @@ import (
 func TorrentAdd() *cobra.Command {
 	addCmd := &cobra.Command{
 		Use:   "add <torrent url> ... [flags]",
-		Short: "add torrent, you can add one or more torrents seperated by blank space",
+		Short: "Add torrent, you can add one or more torrents seperated by blank space",
 		Long: `You can set default save values in config file to save your time.
 Attention: auto management is enabled by default, so make sure your qBittorrent if configured properly.
 `,

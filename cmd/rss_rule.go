@@ -20,7 +20,7 @@ func RssRule() *cobra.Command {
 func RuleList() *cobra.Command {
 	var cmd = &cobra.Command{
 		Use:   "list",
-		Short: "rss rule list",
+		Short: "RSS rule list",
 	}
 
 	cmd.RunE = func(c *cobra.Command, args []string) error {

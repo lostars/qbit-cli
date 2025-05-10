@@ -39,7 +39,8 @@ Auto download calls "qbit torrent add ...", which means it also reads default sa
 	)
 
 	// search flags
-	searchCmd.Flags().StringVar(&plugins, "plugins", "enabled", "plugins a|b|c, all and enabled also supported")
+	searchCmd.Flags().StringVar(&plugins, "plugins", "enabled", `plugins a|b|c, all and enabled also supported.
+make sure you plugin is valid and enabled`)
 	searchCmd.Flags().StringVar(&category, "category", "all", "category of plugin(define by plugin)")
 
 	// auto download flags
@@ -74,15 +75,13 @@ Auto download calls "qbit torrent add ...", which means it also reads default sa
 			return nil
 		}
 
-		fmt.Printf("total search result size: %d\n", len(results))
-		if !autoDownload {
-			for _, r := range results {
-				fmt.Printf("name: [%s], url: [%s]\n", r.FileName, r.FileURL)
-			}
-		}
-
 		if autoDownload {
 			download(&results, torrentRegex, autoMM, savePath, saveCategory, saveTags)
+		} else {
+			fmt.Printf("total search result size: %d\n", len(results))
+			for _, r := range results {
+				fmt.Printf("{%s}:{%s}\n", r.FileName, r.FileURL)
+			}
 		}
 
 		return nil

@@ -1,6 +1,8 @@
 package utils
 
 import (
+	"github.com/olekukonko/tablewriter"
+	"os"
 	"unicode/utf8"
 )
 
@@ -29,4 +31,14 @@ func TruncateString(str string, start int, end int) string {
 		end = l
 	}
 	return string(runes[start:end])
+}
+
+func PrintList(headers []string, data *[][]string) {
+	table := tablewriter.NewWriter(os.Stdout)
+	table.SetHeader(headers)
+	table.SetAutoWrapText(false)
+	for _, v := range *data {
+		table.Append(v)
+	}
+	table.Render()
 }

@@ -23,10 +23,12 @@ func TorrentList() *cobra.Command {
 		limit, offset                 uint32
 	)
 
-	listCmd.Flags().StringVar(&filter, "filter", "", "state filter")
+	listCmd.Flags().StringVar(&filter, "filter", "", `state filter:
+all, downloading, seeding, completed, stopped, active, inactive, running, 
+stalled, stalled_uploading, stalled_downloading, errored`)
 	listCmd.Flags().StringVar(&category, "category", "", "category filter")
 	listCmd.Flags().StringVar(&tag, "tag", "", "tag filter")
-	listCmd.Flags().StringVar(&hashes, "hashes", "", "hash filter separated by |'")
+	listCmd.Flags().StringVar(&hashes, "hashes", "", "hash filter separated by |")
 	listCmd.Flags().Uint32Var(&limit, "limit", 0, "results limit")
 	listCmd.Flags().Uint32Var(&offset, "offset", 0, "results offset")
 
@@ -59,11 +61,13 @@ func TorrentList() *cobra.Command {
 		}
 
 		fmt.Printf("total size: %d\n", len(torrentList))
-		for _, t := range torrentList {
-			fmt.Printf("name:[%s], hash:[%s], category:[%s], tags:[%s] state:[%s], progress:[%v]\n",
-				utils.TruncateStringFromStart(t.Name, 20), t.Hash, t.Category, t.Tags, t.State, t.Progress)
-		}
 
+		headers := []string{"name", "hash", "category", "tags", "state", "progress"}
+		var data [][]string
+		for _, t := range torrentList {
+			data = append(data, []string{utils.TruncateStringFromStart(t.Name, 30), t.Hash, t.Category, t.Tags, t.State, strconv.FormatUint(uint64(t.Progress), 10)})
+		}
+		utils.PrintList(headers, &data)
 		return nil
 	}
 

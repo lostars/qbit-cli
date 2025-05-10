@@ -4,7 +4,9 @@ import (
 	"fmt"
 	"github.com/spf13/cobra"
 	"qbit-cli/internal/api"
+	"qbit-cli/pkg/utils"
 	"regexp"
+	"strconv"
 	"strings"
 )
 
@@ -32,33 +34,37 @@ func PluginList() *cobra.Command {
 		if filter != "" {
 			re = regexp.MustCompile(filter)
 		}
+		var printPlugins []api.SearchPlugin
 		for _, plugin := range *plugins {
 			if enabled && !plugin.Enabled {
 				continue
 			}
 			if re != nil {
 				if re.MatchString(plugin.Name) {
-					printPlugin(plugin)
+					printPlugins = append(printPlugins, plugin)
 				}
 			} else {
 				if filter != "" {
 					contains := strings.Contains(plugin.Name, filter) || strings.Contains(plugin.FullName, filter)
 					if contains {
-						printPlugin(plugin)
+						printPlugins = append(printPlugins, plugin)
 					}
 				} else {
-					printPlugin(plugin)
+					printPlugins = append(printPlugins, plugin)
 				}
 			}
 		}
+
+		fmt.Printf("total plugin size: %d\n", len(printPlugins))
+		headers := []string{"name", "fullName", "enabled", "url"}
+		var data [][]string
+		for _, plugin := range printPlugins {
+			data = append(data, []string{plugin.Name, plugin.FullName, strconv.FormatBool(plugin.Enabled), plugin.Url})
+		}
+		utils.PrintList(headers, &data)
 
 		return nil
 	}
 
 	return cmd
-}
-
-func printPlugin(plugin api.SearchPlugin) {
-	fmt.Printf("name:[%s], fullName:[%s], enabled:[%v], url:[%s]\n",
-		plugin.Name, plugin.FullName, plugin.Enabled, plugin.Url)
 }

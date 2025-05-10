@@ -28,7 +28,9 @@ folder/a.mp4
 		filter, category, hashes, tag string
 	)
 
-	jp.Flags().StringVar(&filter, "filter", "", "state filter")
+	jp.Flags().StringVar(&filter, "filter", "", `state filter:
+all, downloading, seeding, completed, stopped, active, inactive, 
+running, stalled, stalled_uploading, stalled_downloading, errored`)
 	jp.Flags().StringVar(&category, "category", "", "category filter")
 	jp.Flags().StringVar(&tag, "tag", "", "tag filter")
 	jp.Flags().StringVar(&hashes, "hashes", "", "hash filter separated by |'")

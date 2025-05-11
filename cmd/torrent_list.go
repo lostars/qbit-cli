@@ -56,7 +56,7 @@ stalled, stalled_uploading, stalled_downloading, errored`)
 		}
 
 		torrentList, err := api.TorrentList(params)
-		if torrentList != nil {
+		if err != nil {
 			return err
 		}
 

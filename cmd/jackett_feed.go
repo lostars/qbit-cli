@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"errors"
-	"fmt"
 	"github.com/spf13/cobra"
 	"qbit-cli/internal/config"
 )
@@ -38,8 +37,11 @@ It will add several feeds depend on your keywords size.
 		}
 
 		cfg, err := config.GetConfig()
-		if err != nil || !cfg.ValidateJackettConfig() {
-			return errors.New("get jackett config failed")
+		if err != nil {
+			return err
+		}
+		if cfg.Jackett.Host == "" || cfg.Jackett.ApiKey == "" {
+			return errors.New("jackett host or api key is empty")
 		}
 
 		var urls []string
@@ -50,22 +52,17 @@ It will add several feeds depend on your keywords size.
 			urls = append(urls, url)
 		}
 
-		feed(urls, rule, feedName)
+		feedCmd := RssFeed()
+		_ = feedCmd.Flags().Set("rule", rule)
+		_ = feedCmd.Flags().Set("path", feedName)
+		feedCmd.SetArgs(urls)
+
+		if err := feedCmd.Execute(); err != nil {
+			return err
+		}
 
 		return nil
 	}
 
 	return cmd
-}
-
-func feed(urls []string, rule, feedName string) {
-
-	feedCmd := RssFeed()
-	_ = feedCmd.Flags().Set("rule", rule)
-	_ = feedCmd.Flags().Set("path", feedName)
-	feedCmd.SetArgs(urls)
-
-	if err := feedCmd.Execute(); err != nil {
-		fmt.Printf("jackett feed error: %v\n", err)
-	}
 }

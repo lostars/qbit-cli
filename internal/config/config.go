@@ -72,13 +72,9 @@ func GetConfig() (*Config, error) {
 
 	cfg := Config{}
 	if err := yaml.Unmarshal(file, &cfg); err != nil {
-		return nil, err
+		return nil, &CfgError{"config file parse error", CfgPath, err}
 	}
 	return &cfg, nil
-}
-
-func (cfg *Config) ValidateJackettConfig() bool {
-	return cfg.Jackett.ApiKey != "" && cfg.Jackett.Host != ""
 }
 
 type CfgError struct {

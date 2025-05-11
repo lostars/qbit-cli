@@ -29,3 +29,11 @@ func TestTruncateString(t *testing.T) {
 
 	// 4k2.com@ipvr00301_1_hq.mp4
 }
+
+func TestFormatFileSize(t *testing.T) {
+	println(FormatFileSizeAuto(129789017287, 1))
+	println(FormatFileSizeAuto(12978901, 1))
+	println(FormatFileSizeAuto(200000, 0))
+	println(FormatFileSizeAuto(1024, 0))
+	println(FormatFileSizeAuto(124, 0))
+}

@@ -29,6 +29,12 @@ type Config struct {
 		Host   string `yaml:"host" validate:"required"`
 		ApiKey string `yaml:"api-key"`
 	} `yaml:"jackett"`
+
+	Emby struct {
+		Host   string `yaml:"host"`
+		ApiKey string `yaml:"api-key"`
+		User   string `yaml:"user"`
+	}
 }
 
 func loadDefaultConfig() []byte {

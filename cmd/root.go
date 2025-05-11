@@ -31,6 +31,7 @@ same as executable file named config.yaml
 	rootCmd.AddCommand(RssCmd())
 	rootCmd.AddCommand(PluginCmd())
 	rootCmd.AddCommand(JackettCmd())
+	rootCmd.AddCommand(EmbyCmd())
 
 	if err := rootCmd.Execute(); err != nil {
 		os.Exit(1)

@@ -48,12 +48,80 @@ func (c *QbitClient) pwd() string {
 	return c.Config.Server.Password
 }
 
+type EmbyClient struct {
+	Config *config.Config
+	Client *http.Client
+}
+
+var embyClient *EmbyClient
+
+func GetEmbyClient() (*EmbyClient, error) {
+	if embyClient != nil {
+		return embyClient, nil
+	}
+	cfg, err := config.GetConfig()
+	if err != nil {
+		return nil, err
+	}
+	embyClient = &EmbyClient{
+		Config: cfg,
+		Client: &http.Client{Timeout: time.Second * 10},
+	}
+
+	return embyClient, nil
+}
+
+func (c *EmbyClient) embyHost() string {
+	return c.Config.Emby.Host
+}
+
+func (c *EmbyClient) embyApiKey() string {
+	return c.Config.Emby.ApiKey
+}
+
+func (c *EmbyClient) EmbyUser() string {
+	return c.Config.Emby.User
+}
+
+func (c *EmbyClient) Get(endpoint string, params url.Values) (*http.Response, error) {
+	fullUrl := c.embyHost() + endpoint
+	if params == nil {
+		params = url.Values{}
+	}
+	params.Add("X-Emby-Token", c.embyApiKey())
+	params.Add("X-Emby-Client", "qbit-cli")
+	params.Add("X-Emby-Device-Name", "qbit-cli")
+	fullUrl += "?" + params.Encode()
+
+	req, err := http.NewRequest(http.MethodGet, fullUrl, nil)
+	if err != nil {
+		return nil, &HTTPClientError{"Get", fullUrl, err}
+	}
+	resp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if resp.StatusCode != http.StatusOK {
+		return resp, &HTTPClientError{resp.Status, fullUrl, nil}
+	}
+	return resp, nil
+}
+
 func ParseJSON(resp *http.Response, v any) error {
 	err := json.NewDecoder(resp.Body).Decode(v)
 	if err != nil {
 		return err
 	}
 	return nil
+}
+
+func ParseRawJSON(resp *http.Response) (string, error) {
+	raw := json.RawMessage{}
+	err := json.NewDecoder(resp.Body).Decode(&raw)
+	if err != nil {
+		return "", err
+	}
+	return string(raw), nil
 }
 
 func (c *QbitClient) Get(endpoint string, params url.Values) (*http.Response, error) {
@@ -66,7 +134,7 @@ func (c *QbitClient) Get(endpoint string, params url.Values) (*http.Response, er
 		fullUrl += "?" + params.Encode()
 	}
 
-	req, err := http.NewRequest("GET", fullUrl, nil)
+	req, err := http.NewRequest(http.MethodGet, fullUrl, nil)
 	if err != nil {
 		return nil, &HTTPClientError{"Get", fullUrl, err}
 	}
@@ -89,7 +157,7 @@ func (c *QbitClient) Post(endpoint string, params url.Values) (*http.Response, e
 	}
 
 	fullUrl := c.host() + endpoint
-	req, err := http.NewRequest("POST", fullUrl, strings.NewReader(params.Encode()))
+	req, err := http.NewRequest(http.MethodPost, fullUrl, strings.NewReader(params.Encode()))
 	if err != nil {
 		return nil, err
 	}

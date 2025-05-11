@@ -41,13 +41,13 @@ running, stalled, stalled_uploading, stalled_downloading, errored`)
 			params.Set("filter", filter)
 		}
 		if tag != "" {
-			params.Set("tag", url.QueryEscape(tag))
+			params.Set("tag", tag)
 		}
 		if hashes != "" {
-			params.Set("hashes", url.QueryEscape(hashes))
+			params.Set("hashes", hashes)
 		}
 		if category != "" {
-			params.Set("category", url.QueryEscape(category))
+			params.Set("category", category)
 		}
 
 		torrentList, err := api.TorrentList(params)

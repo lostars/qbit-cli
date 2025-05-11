@@ -14,8 +14,7 @@ You can create an issue when you encounter any bug.**
 
 ## Installation
 
-Clone the source and run `make build`.
-Or you can download the binary from release page if exists.
+Clone the source and run `make build` or download the binary from release page.
 
 ## Configuration
 
@@ -23,7 +22,8 @@ You can use `-c /path/to/config.yaml` or `--config=/path/to/config.yaml`.
 
 Default config location is `~/.config/qbit-cli/config.yaml` or same as executable file named `config.yaml`.
 
-**Attention: take good care of your password**
+**Attention:
+Take good care of your password and configure the part that related to the command you use.**
 ```yaml
 server:
   host: "https://xx.com:8080"
@@ -37,7 +37,18 @@ torrent:
 jackett:
   host: ""
   api-key: ""
+emby:
+  host: ""
+  api-key: ""
+  user: ""
 ```
+
+**Notice:**
+
+Emby user must be provided to use `/emby/Users/{user}/Items/{item}` api 
+which is used by `emby item info <item>` command.
+
+Be aware of your Emby API Key permissions(Administrator is better)
 
 ## Commands
 
@@ -86,4 +97,10 @@ list    # plugin list
 
 ```
 feed    # add jackett feed to qBittorrent
+```
+
+### emby
+
+```
+item    # item management `item -h` for more information
 ```

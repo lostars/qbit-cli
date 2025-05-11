@@ -39,11 +39,11 @@ stalled, stalled_uploading, stalled_downloading, errored`)
 		}
 		if category != "" {
 			// category must be encoded
-			params.Set("category", url.QueryEscape(category))
+			params.Set("category", category)
 		}
 		if tag != "" {
 			// tag must be encoded
-			params.Set("tag", url.QueryEscape(tag))
+			params.Set("tag", tag)
 		}
 		if hashes != "" {
 			params.Set("hashes", hashes)

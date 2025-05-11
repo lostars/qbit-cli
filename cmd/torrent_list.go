@@ -55,9 +55,9 @@ stalled, stalled_uploading, stalled_downloading, errored`)
 			params.Set("offset", strconv.FormatUint(uint64(offset), 10))
 		}
 
-		torrentList := api.TorrentList(params)
-		if torrentList == nil {
-			return nil
+		torrentList, err := api.TorrentList(params)
+		if torrentList != nil {
+			return err
 		}
 
 		fmt.Printf("total size: %d\n", len(torrentList))

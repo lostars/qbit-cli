@@ -27,9 +27,9 @@ func SubList() *cobra.Command {
 	}
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
-		results := api.RssAllItems(false)
-		if results == nil {
-			return nil
+		results, err := api.RssAllItems(false)
+		if err != nil {
+			return err
 		}
 		for k, v := range results {
 			fmt.Printf("[%s]: [%s]\n", k, v.URL)
@@ -53,9 +53,9 @@ func RemoveSub() *cobra.Command {
 	}
 
 	cmd.RunE = func(c *cobra.Command, args []string) error {
-		results := api.RssAllItems(false)
-		if results == nil {
-			return errors.New("no feeds found to remove")
+		results, err := api.RssAllItems(false)
+		if err != nil {
+			return err
 		}
 
 		for _, url := range args {

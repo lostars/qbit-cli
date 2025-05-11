@@ -66,7 +66,7 @@ sub     # sub -h for details
 ### rename
 
 ```
-jp      # auto rename you JP torrents rename jp -h for more details
+jp      # auto rename your JP torrents rename jp -h for more details
 ```
 
 **jp**

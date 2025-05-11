@@ -25,9 +25,9 @@ func PluginList() *cobra.Command {
 	cmd.Flags().BoolVar(&enabled, "enabled", false, "list enabled plugins")
 
 	cmd.RunE = func(c *cobra.Command, args []string) error {
-		plugins := api.SearchPlugins()
-		if plugins == nil {
-			return nil
+		plugins, err := api.SearchPlugins()
+		if err != nil {
+			return err
 		}
 
 		var re *regexp.Regexp

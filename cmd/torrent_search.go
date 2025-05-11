@@ -70,8 +70,8 @@ make sure you plugin is valid and enabled`)
 			return err
 		}
 
-		results := api.SearchDetails(1*time.Second, result.ID, params)
-		if results == nil {
+		results, err := api.SearchDetails(1*time.Second, result.ID, params)
+		if err != nil {
 			return nil
 		}
 

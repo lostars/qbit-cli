@@ -1,7 +1,7 @@
 package config
 
 import (
-	"errors"
+	"fmt"
 	"gopkg.in/yaml.v3"
 	"os"
 	"path/filepath"
@@ -60,12 +60,12 @@ func GetConfig() (*Config, error) {
 	if CfgPath == "" {
 		file = loadDefaultConfig()
 		if file == nil {
-			return nil, errors.New("default config not found")
+			return nil, &CfgError{"default config load error", "", nil}
 		}
 	} else {
 		f, err := os.ReadFile(CfgPath)
 		if err != nil {
-			return nil, err
+			return nil, &CfgError{"config load error", CfgPath, nil}
 		}
 		file = f
 	}
@@ -79,4 +79,18 @@ func GetConfig() (*Config, error) {
 
 func (cfg *Config) ValidateJackettConfig() bool {
 	return cfg.Jackett.ApiKey != "" && cfg.Jackett.Host != ""
+}
+
+type CfgError struct {
+	message string
+	path    string
+	err     error
+}
+
+func (cfg *CfgError) Error() string {
+	errStr := ""
+	if cfg.err != nil {
+		errStr = cfg.err.Error()
+	}
+	return fmt.Sprintf("%s: %s %s", cfg.message, cfg.path, errStr)
 }

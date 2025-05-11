@@ -9,26 +9,23 @@ import (
 // https://github.com/qbittorrent/qBittorrent/wiki/WebUI-API-(qBittorrent-5.0)
 // all the /torrent/* api here
 
-func TorrentList(params url.Values) []Torrent {
+func TorrentList(params url.Values) ([]Torrent, error) {
 	client, err := GetQbitClient()
 	if err != nil {
-		printApiClientError("TorrentList", err)
-		return nil
+		return nil, err
 	}
 
 	resp, err := client.Get("/api/v2/torrents/info", params)
 	if err != nil {
-		printApiGetError("TorrentList", err)
-		return nil
+		return nil, err
 	}
 	defer resp.Body.Close()
 
 	var torrentList []Torrent
 	if err := client.ParseJSON(resp, &torrentList); err != nil {
-		printApiParsJSONError("TorrentList", err)
-		return nil
+		return nil, err
 	}
-	return torrentList
+	return torrentList, nil
 }
 
 func TorrentAdd(params url.Values) error {
@@ -48,25 +45,22 @@ func TorrentAdd(params url.Values) error {
 	return nil
 }
 
-func TorrentFiles(params url.Values) []TorrentFile {
+func TorrentFiles(params url.Values) ([]TorrentFile, error) {
 	client, err := GetQbitClient()
 	if err != nil {
-		printApiClientError("TorrentFiles", err)
-		return nil
+		return nil, err
 	}
 	resp, err := client.Get("/api/v2/torrents/files", params)
 	if err != nil {
-		printApiGetError("TorrentFiles", err)
-		return nil
+		return nil, err
 	}
 	defer resp.Body.Close()
 
 	var torrentFiles []TorrentFile
 	if err := client.ParseJSON(resp, &torrentFiles); err != nil {
-		printApiParsJSONError("TorrentFiles", err)
-		return nil
+		return nil, err
 	}
-	return torrentFiles
+	return torrentFiles, nil
 }
 
 func TorrentRenameFolder(hash string, old string, new string) error {
@@ -87,7 +81,7 @@ func TorrentRenameFolder(hash string, old string, new string) error {
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("torrent:[%s] rename folder fail: %s", hash, resp.Status)
+		return &QbitClientError{resp.Status, "TorrentRenameFolder", nil}
 	}
 	return nil
 }
@@ -110,7 +104,7 @@ func TorrentRenameFile(hash string, old string, new string) error {
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("torrent:[%s] rename file fail: %s", hash, resp.Status)
+		return &QbitClientError{resp.Status, "TorrentRenameFile", nil}
 	}
 	return nil
 }

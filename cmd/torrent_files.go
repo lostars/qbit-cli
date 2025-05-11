@@ -27,9 +27,9 @@ func TorrentFiles() *cobra.Command {
 		hash := args[0]
 		var params = url.Values{"hash": {hash}}
 
-		torrentFiles := api.TorrentFiles(params)
-		if torrentFiles == nil {
-			return nil
+		torrentFiles, err := api.TorrentFiles(params)
+		if err != nil {
+			return err
 		}
 
 		fmt.Printf("total file size: %d\n", len(torrentFiles))

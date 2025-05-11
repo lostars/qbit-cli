@@ -1,7 +1,7 @@
 package api
 
 import (
-	"errors"
+	"fmt"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -24,7 +24,7 @@ func SearchStart(params url.Values) (SearchResult, error) {
 	defer resp.Body.Close()
 
 	if resp.StatusCode == http.StatusConflict {
-		return result, errors.New("user has reached the limit of max Running searches (currently set to 5)")
+		return result, &QbitClientError{resp.Status, "SearchStart", nil}
 	}
 
 	if err := client.ParseJSON(resp, &result); err != nil {
@@ -36,11 +36,10 @@ func SearchStart(params url.Values) (SearchResult, error) {
 // SearchDetails get all search results, slow(may take seconds)
 // Attention: you must use the same auth information to start search and get results.
 // Or you will get a 404 from /api/v2/search/results
-func SearchDetails(d time.Duration, resultID uint32, params url.Values) []SearchDetail {
+func SearchDetails(d time.Duration, resultID uint32, params url.Values) ([]SearchDetail, error) {
 	client, err := GetQbitClient()
 	if err != nil {
-		printApiClientError("SearchDetails", err)
-		return nil
+		return nil, err
 	}
 	status := "Running"
 	var details []SearchDetail
@@ -55,6 +54,7 @@ func SearchDetails(d time.Duration, resultID uint32, params url.Values) []Search
 
 		resp, err := client.Get("/api/v2/search/results", params)
 		if err != nil {
+			fmt.Printf(err.Error())
 			break
 		}
 
@@ -62,6 +62,7 @@ func SearchDetails(d time.Duration, resultID uint32, params url.Values) []Search
 		err = client.ParseJSON(resp, &result)
 		resp.Body.Close()
 		if err != nil {
+			fmt.Println(err.Error())
 			continue
 		}
 
@@ -72,28 +73,25 @@ func SearchDetails(d time.Duration, resultID uint32, params url.Values) []Search
 		}
 	}
 
-	return details
+	return details, nil
 }
 
-func SearchPlugins() *[]SearchPlugin {
+func SearchPlugins() (*[]SearchPlugin, error) {
 	c, err := GetQbitClient()
 	if err != nil {
-		printApiClientError("SearchPlugins", err)
-		return nil
+		return nil, err
 	}
 
 	resp, err := c.Get("/api/v2/search/plugins", nil)
 	if err != nil {
-		printApiGetError("SearchPlugins", err)
-		return nil
+		return nil, err
 	}
 	defer resp.Body.Close()
 
 	var result []SearchPlugin
 	if err := c.ParseJSON(resp, &result); err != nil {
-		printApiParsJSONError("SearchPlugins", err)
-		return nil
+		return nil, err
 	}
 
-	return &result
+	return &result, nil
 }

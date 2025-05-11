@@ -50,16 +50,17 @@ running, stalled, stalled_uploading, stalled_downloading, errored`)
 			params.Set("category", url.QueryEscape(category))
 		}
 
-		torrentList := api.TorrentList(params)
-		if torrentList == nil {
-			return nil
+		torrentList, err := api.TorrentList(params)
+		if err != nil {
+			return err
 		}
 
 		fmt.Printf("total size: %d\n", len(torrentList))
 		for _, t := range torrentList {
 			// get torrent files
-			fileList := api.TorrentFiles(url.Values{"hash": {t.Hash}})
+			fileList, err := api.TorrentFiles(url.Values{"hash": {t.Hash}})
 			if fileList == nil {
+				fmt.Println(err.Error())
 				continue
 			}
 

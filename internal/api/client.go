@@ -2,7 +2,6 @@ package api
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -52,7 +51,7 @@ func (c *QbitClient) pwd() string {
 func (c *QbitClient) ParseJSON(resp *http.Response, v any) error {
 	err := json.NewDecoder(resp.Body).Decode(v)
 	if err != nil {
-		return err
+		return &QbitClientError{"parse json error", "ParseJSON", err}
 	}
 	return nil
 }
@@ -78,7 +77,7 @@ func (c *QbitClient) Get(endpoint string, params url.Values) (*http.Response, er
 
 	req, err := http.NewRequest("GET", fullUrl, nil)
 	if err != nil {
-		return nil, err
+		return nil, &HTTPClientError{"Get", fullUrl, err}
 	}
 
 	for k, v := range c.Headers {
@@ -88,10 +87,6 @@ func (c *QbitClient) Get(endpoint string, params url.Values) (*http.Response, er
 	resp, err := c.Client.Do(req)
 	if err != nil {
 		return nil, err
-	}
-	if resp.StatusCode != http.StatusOK {
-		fmt.Printf("%s get failed: %s\n", fullUrl, resp.Status)
-		return resp, nil
 	}
 
 	return resp, nil
@@ -102,7 +97,8 @@ func (c *QbitClient) Post(endpoint string, params url.Values) (*http.Response, e
 		return nil, err
 	}
 
-	req, err := http.NewRequest("POST", c.host()+endpoint, strings.NewReader(params.Encode()))
+	fullUrl := c.host() + endpoint
+	req, err := http.NewRequest("POST", fullUrl, strings.NewReader(params.Encode()))
 	if err != nil {
 		return nil, err
 	}
@@ -113,7 +109,7 @@ func (c *QbitClient) Post(endpoint string, params url.Values) (*http.Response, e
 	}
 	resp, err := c.Client.Do(req)
 	if err != nil {
-		return nil, err
+		return nil, &HTTPClientError{"Post", fullUrl, err}
 	}
 
 	return resp, nil
@@ -136,12 +132,12 @@ func (c *QbitClient) login() error {
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("login failed: %s", resp.Status)
+		return &QbitClientError{"login failed", "login", nil}
 	}
 
 	cookie, _, _ := strings.Cut(resp.Header.Get("Set-Cookie"), ";")
 	if cookie == "" {
-		return errors.New("login success, but cookie is empty")
+		return &QbitClientError{"login success, but cookie is empty", "login", nil}
 	}
 
 	c.Headers["Cookie"] = cookie
@@ -149,14 +145,30 @@ func (c *QbitClient) login() error {
 	return nil
 }
 
-func printApiClientError(function string, err error) {
-	fmt.Printf("%s failed by get client: %v\n", function, err)
+type HTTPClientError struct {
+	message string
+	url     string
+	err     error
 }
 
-func printApiGetError(function string, err error) {
-	fmt.Printf("%s failed by http get: %v\n", function, err)
+type QbitClientError struct {
+	message string
+	method  string
+	err     error
 }
 
-func printApiParsJSONError(function string, err error) {
-	fmt.Printf("%s failed by http post: %v\n", function, err)
+func (c *QbitClientError) Error() string {
+	errStr := ""
+	if c.err != nil {
+		errStr = c.err.Error()
+	}
+	return fmt.Sprintf("%s qbit client error: %s %s", c.method, c.message, errStr)
+}
+
+func (e *HTTPClientError) Error() string {
+	errStr := ""
+	if e.err != nil {
+		errStr = e.err.Error()
+	}
+	return fmt.Sprintf("http client error: %s %s %s", e.url, e.message, errStr)
 }

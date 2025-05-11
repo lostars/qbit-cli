@@ -25,9 +25,9 @@ func RuleList() *cobra.Command {
 
 	cmd.RunE = func(c *cobra.Command, args []string) error {
 
-		ruleMap := api.RssRuleList()
-		if ruleMap == nil {
-			return nil
+		ruleMap, err := api.RssRuleList()
+		if err != nil {
+			return err
 		}
 
 		for ruleName, rule := range ruleMap {

@@ -45,7 +45,10 @@ func RssFeed() *cobra.Command {
 
 		if rule != "" && len(successUrl) > 0 {
 			var rssRule *api.RssRule
-			ruleMap := api.RssRuleList()
+			ruleMap, err := api.RssRuleList()
+			if err != nil {
+				return err
+			}
 			if ruleMap != nil {
 				if r := ruleMap[rule]; r != nil {
 					for _, arg := range successUrl {

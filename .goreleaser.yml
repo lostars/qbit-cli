@@ -7,13 +7,6 @@ before:
     - go mod tidy
     - go mod download
 
-upx:
-  - enabled: true
-    goos:
-      - linux
-      - windows
-    compress: "5"
-
 builds:
   - main: main.go
     binary: qbit

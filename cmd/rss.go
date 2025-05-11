@@ -8,7 +8,6 @@ func RssCmd() *cobra.Command {
 		Short: "Manage RSS",
 	}
 
-	cmd.AddCommand(RssFeed())
 	cmd.AddCommand(RssRule())
 	cmd.AddCommand(RssSub())
 

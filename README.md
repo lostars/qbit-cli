@@ -58,7 +58,6 @@ You can use `--auto-download=true` `--torrent-regex=batman` to download torrents
 ### rss
 
 ```
-feed    # add feed
 rule    # rule -h for details
 sub     # sub -h for details
 ```

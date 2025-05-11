@@ -10,7 +10,7 @@ import (
 
 // all /rss/* api here
 
-func RssAddFeed(feedUrl string, path string) error {
+func RssAddSub(feedUrl string, path string) error {
 	params := url.Values{
 		"url":  {feedUrl},
 		"path": {path},
@@ -28,7 +28,7 @@ func RssAddFeed(feedUrl string, path string) error {
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return &QbitClientError{resp.Status, "RssAddFeed", nil}
+		return &QbitClientError{resp.Status, "RssAddSub", nil}
 	}
 
 	return nil

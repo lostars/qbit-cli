@@ -20,7 +20,6 @@ func TorrentSearch() *cobra.Command {
 		Short: "Search torrents through qBittorrent plugins",
 		Long: `Be attention when you enable auto download,
 and ensure that torrent-regex works properly to void unnecessary downloads.
-Search results will not print when auto download enabled.
 Auto download calls "qbit torrent add ...", which means it also reads default save values of torrent part on config file
 `,
 		Example: `qbit torrent search <keyword> --category=movie --plugins=bt4g`,
@@ -42,13 +41,13 @@ Auto download calls "qbit torrent add ...", which means it also reads default sa
 	searchCmd.Flags().StringVar(&plugins, "plugins", "enabled", `plugins a|b|c, all and enabled also supported.
 make sure you plugin is valid and enabled`)
 	searchCmd.Flags().StringVar(&category, "category", "all", "category of plugin(define by plugin)")
+	searchCmd.Flags().StringVar(&torrentRegex, "torrent-regex", "", "torrent file name filter")
 
 	// auto download flags
 	searchCmd.Flags().BoolVar(&autoDownload, "auto-download", false, "Attention: if true, it will auto download all the torrents that filter by torrent-regex")
 	searchCmd.Flags().BoolVar(&autoMM, "auto-management", true, "whether enable torrent auto management default is true, valid only when auto download enabled")
 	// auto download save flags
 	searchCmd.Flags().StringVar(&saveCategory, "save-category", "", "torrent save category, valid only when auto download enabled")
-	searchCmd.Flags().StringVar(&torrentRegex, "torrent-regex", "", "torrent file name filter")
 	searchCmd.Flags().StringVar(&savePath, "save-path", "", "torrent save path, valid only when auto download enabled")
 	searchCmd.Flags().StringVar(&saveTags, "save-tags", "", "torrent save tags, valid only when auto download enabled")
 
@@ -75,13 +74,34 @@ make sure you plugin is valid and enabled`)
 			return nil
 		}
 
-		if autoDownload {
-			download(&results, torrentRegex, autoMM, savePath, saveCategory, saveTags)
-		} else {
-			fmt.Printf("total search result size: %d\n", len(results))
-			for _, r := range results {
-				fmt.Printf("{%s}:{%s}\n", r.FileName, r.FileURL)
+		var re *regexp.Regexp
+		if torrentRegex != "" {
+			r, err := regexp.Compile(torrentRegex)
+			if err != nil {
+				fmt.Printf("regex: %s compile failed\n", torrentRegex)
 			}
+			re = r
+		}
+
+		var urls []string
+		var printList []api.SearchDetail
+		for _, r := range results {
+			if re == nil {
+				printList = append(printList, r)
+			} else {
+				if re.MatchString(r.FileName) {
+					printList = append(printList, r)
+					urls = append(urls, r.FileURL)
+				}
+			}
+		}
+
+		fmt.Printf("total search result size: %d\n", len(printList))
+		for _, r := range printList {
+			fmt.Printf("{%s}:{%s}\n", r.FileName, r.FileURL)
+		}
+		if autoDownload {
+			download(urls, autoMM, savePath, saveCategory, saveTags)
 		}
 
 		return nil
@@ -90,29 +110,7 @@ make sure you plugin is valid and enabled`)
 	return searchCmd
 }
 
-func download(results *[]api.SearchDetail, regex string, autoMM bool, savePath, saveCategory, saveTags string) {
-
-	var re *regexp.Regexp
-	if regex != "" {
-		r, err := regexp.Compile(regex)
-		if err != nil {
-			fmt.Printf("regex: %s compile failed\n", regex)
-			return
-		}
-		re = r
-	}
-
-	var urls []string
-	for _, r := range *results {
-		if re != nil && re.MatchString(r.FileName) {
-			urls = append(urls, r.FileURL)
-		}
-	}
-
-	if len(urls) == 0 {
-		fmt.Printf("auto download no results found by regex: %s\n", regex)
-		return
-	}
+func download(urls []string, autoMM bool, savePath, saveCategory, saveTags string) {
 
 	addCmd := TorrentAdd()
 	_ = addCmd.Flags().Set("category", saveCategory)

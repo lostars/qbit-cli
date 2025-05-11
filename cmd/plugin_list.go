@@ -57,9 +57,9 @@ func PluginList() *cobra.Command {
 
 		fmt.Printf("total plugin size: %d\n", len(printPlugins))
 		headers := []string{"name", "fullName", "enabled", "url"}
-		var data [][]string
-		for _, plugin := range printPlugins {
-			data = append(data, []string{plugin.Name, plugin.FullName, strconv.FormatBool(plugin.Enabled), plugin.Url})
+		var data = make([][]string, len(printPlugins))
+		for i, plugin := range printPlugins {
+			data[i] = []string{plugin.Name, plugin.FullName, strconv.FormatBool(plugin.Enabled), plugin.Url}
 		}
 		utils.PrintList(headers, &data)
 

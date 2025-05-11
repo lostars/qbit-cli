@@ -35,10 +35,10 @@ func TorrentFiles() *cobra.Command {
 		fmt.Printf("total file size: %d\n", len(torrentFiles))
 		fmt.Println("priority = 0 means file is not selected to download")
 		headers := []string{"name", "priority", "progress"}
-		var data [][]string
-		for _, f := range torrentFiles {
+		var data = make([][]string, len(torrentFiles))
+		for i, f := range torrentFiles {
 			p := strconv.FormatInt((int64)(f.Progress*100), 10) + "%"
-			data = append(data, []string{utils.TruncateStringFromStart(f.Name, 50), strconv.Itoa(int(f.Priority)), p})
+			data[i] = []string{f.Name, strconv.Itoa(int(f.Priority)), p}
 		}
 		utils.PrintList(headers, &data)
 

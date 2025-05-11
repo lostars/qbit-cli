@@ -1,7 +1,9 @@
 package utils
 
 import (
+	"fmt"
 	"github.com/olekukonko/tablewriter"
+	"github.com/olekukonko/tablewriter/tw"
 	"os"
 	"strconv"
 	"unicode/utf8"
@@ -35,13 +37,29 @@ func TruncateString(str string, start int, end int) string {
 }
 
 func PrintList(headers []string, data *[][]string) {
-	table := tablewriter.NewWriter(os.Stdout)
-	table.SetHeader(headers)
-	table.SetAutoWrapText(false)
-	for _, v := range *data {
-		table.Append(v)
+	table := tablewriter.NewTable(os.Stdout,
+		tablewriter.WithConfig(tablewriter.Config{
+			Row: tw.CellConfig{
+				Formatting: tw.CellFormatting{
+					MaxWidth:  50,              // Limit column width
+					AutoWrap:  tw.WrapTruncate, // Wrap long content
+					Alignment: tw.AlignNone,    // Left-align rows
+				},
+			},
+		}),
+	)
+
+	table.Header(headers)
+	err := table.Bulk(*data)
+	if err != nil {
+		fmt.Printf("PrintList error: %v\n", err)
+		return
 	}
-	table.Render()
+	err = table.Render()
+	if err != nil {
+		fmt.Printf("PrintList error: %v\n", err)
+		return
+	}
 }
 
 const (

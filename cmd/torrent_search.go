@@ -84,7 +84,7 @@ make sure you plugin is valid and enabled`)
 		}
 
 		var urls []string
-		var printList []api.SearchDetail
+		var printList = make([]api.SearchDetail, len(results))
 		for _, r := range results {
 			if re == nil {
 				printList = append(printList, r)

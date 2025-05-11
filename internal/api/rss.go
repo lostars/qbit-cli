@@ -47,7 +47,7 @@ func RssRuleList() (map[string]*RssRule, error) {
 	defer resp.Body.Close()
 
 	var results map[string]*RssRule
-	if err := c.ParseJSON(resp, &results); err != nil {
+	if err := ParseJSON(resp, &results); err != nil {
 		fmt.Println(err.Error())
 		return nil, err
 	}
@@ -94,7 +94,7 @@ func RssAllItems(withData bool) (map[string]RssSub, error) {
 	defer resp.Body.Close()
 
 	var results map[string]RssSub
-	if err := c.ParseJSON(resp, &results); err != nil {
+	if err := ParseJSON(resp, &results); err != nil {
 		return nil, err
 	}
 	return results, nil

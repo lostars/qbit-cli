@@ -22,7 +22,7 @@ func TorrentList(params url.Values) ([]Torrent, error) {
 	defer resp.Body.Close()
 
 	var torrentList []Torrent
-	if err := client.ParseJSON(resp, &torrentList); err != nil {
+	if err := ParseJSON(resp, &torrentList); err != nil {
 		return nil, err
 	}
 	return torrentList, nil
@@ -57,7 +57,7 @@ func TorrentFiles(params url.Values) ([]TorrentFile, error) {
 	defer resp.Body.Close()
 
 	var torrentFiles []TorrentFile
-	if err := client.ParseJSON(resp, &torrentFiles); err != nil {
+	if err := ParseJSON(resp, &torrentFiles); err != nil {
 		return nil, err
 	}
 	return torrentFiles, nil

@@ -27,7 +27,7 @@ func SearchStart(params url.Values) (SearchResult, error) {
 		return result, &QbitClientError{resp.Status, "SearchStart", nil}
 	}
 
-	if err := client.ParseJSON(resp, &result); err != nil {
+	if err := ParseJSON(resp, &result); err != nil {
 		return result, err
 	}
 	return result, nil
@@ -59,7 +59,7 @@ func SearchDetails(d time.Duration, resultID uint32, params url.Values) ([]Searc
 		}
 
 		var result SearchResults
-		err = client.ParseJSON(resp, &result)
+		err = ParseJSON(resp, &result)
 		resp.Body.Close()
 		if err != nil {
 			fmt.Println(err.Error())
@@ -89,7 +89,7 @@ func SearchPlugins() (*[]SearchPlugin, error) {
 	defer resp.Body.Close()
 
 	var result []SearchPlugin
-	if err := c.ParseJSON(resp, &result); err != nil {
+	if err := ParseJSON(resp, &result); err != nil {
 		return nil, err
 	}
 

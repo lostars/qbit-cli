@@ -48,21 +48,12 @@ func (c *QbitClient) pwd() string {
 	return c.Config.Server.Password
 }
 
-func (c *QbitClient) ParseJSON(resp *http.Response, v any) error {
+func ParseJSON(resp *http.Response, v any) error {
 	err := json.NewDecoder(resp.Body).Decode(v)
 	if err != nil {
 		return err
 	}
 	return nil
-}
-
-func (c *QbitClient) ParseRawJSON(resp *http.Response) (*json.RawMessage, error) {
-	var raw json.RawMessage
-	err := json.NewDecoder(resp.Body).Decode(&raw)
-	if err != nil {
-		return nil, err
-	}
-	return &raw, nil
 }
 
 func (c *QbitClient) Get(endpoint string, params url.Values) (*http.Response, error) {

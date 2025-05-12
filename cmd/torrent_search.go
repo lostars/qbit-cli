@@ -6,6 +6,7 @@ import (
 	"github.com/spf13/cobra"
 	"net/url"
 	"qbit-cli/internal/api"
+	"qbit-cli/pkg/utils"
 	"regexp"
 	"strconv"
 	"time"
@@ -79,12 +80,13 @@ make sure you plugin is valid and enabled`)
 			r, err := regexp.Compile(torrentRegex)
 			if err != nil {
 				fmt.Printf("regex: %s compile failed\n", torrentRegex)
+			} else {
+				re = r
 			}
-			re = r
 		}
 
 		var urls []string
-		var printList = make([]api.SearchDetail, len(results))
+		var printList = make([]api.SearchDetail, 0, len(results))
 		for _, r := range results {
 			if re == nil {
 				printList = append(printList, r)
@@ -97,9 +99,12 @@ make sure you plugin is valid and enabled`)
 		}
 
 		fmt.Printf("total search result size: %d\n", len(printList))
+		headers := []string{"fileName", "Url"}
+		data := make([][]string, len(printList))
 		for _, r := range printList {
-			fmt.Printf("{%s}:{%s}\n", r.FileName, r.FileURL)
+			data = append(data, []string{r.FileName, r.FileURL})
 		}
+		utils.PrintList(headers, &data)
 		if autoDownload {
 			download(urls, autoMM, savePath, saveCategory, saveTags)
 		}

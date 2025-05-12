@@ -193,15 +193,13 @@ func showStreams(sources *[]api.EmbyMediaSource) {
 	}
 	fmt.Println("media streams list:")
 	headers := []string{"ID", "Index", "Type", "DisplayTitle"}
-	data := make([][]string, len(*sources)*2)
-	idx := 0
+	data := make([][]string, 0, len(*sources)*2)
 	for _, source := range *sources {
 		if source.MediaStreams == nil {
 			continue
 		}
 		for _, stream := range source.MediaStreams {
-			data[idx] = []string{source.ID, strconv.FormatInt(int64(stream.Index), 10), stream.Type, stream.DisplayTitle}
-			idx++
+			data = append(data, []string{source.ID, strconv.FormatInt(int64(stream.Index), 10), stream.Type, stream.DisplayTitle})
 		}
 	}
 	utils.PrintList(headers, &data)

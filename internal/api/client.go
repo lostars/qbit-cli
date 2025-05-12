@@ -83,6 +83,12 @@ func (c *EmbyClient) EmbyUser() string {
 	return c.Config.Emby.User
 }
 
+func (c *EmbyClient) EmbyUserEndpoint(endpoint ...string) string {
+	str := []string{"/emby/Users", c.EmbyUser()}
+	str = append(str, endpoint...)
+	return strings.Join(str, "/")
+}
+
 func (c *EmbyClient) Get(endpoint string, params url.Values) (*http.Response, error) {
 	fullUrl := c.embyHost() + endpoint
 	if params == nil {

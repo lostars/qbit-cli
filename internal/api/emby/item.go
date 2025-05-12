@@ -11,7 +11,7 @@ func Items(params url.Values) (*api.EmbyItems, error) {
 		return nil, err
 	}
 
-	resp, err := embyClient.Get("/emby/Items", params)
+	resp, err := embyClient.Get(embyClient.EmbyUserEndpoint("Items"), params)
 	if err != nil {
 		return nil, err
 	}
@@ -28,7 +28,7 @@ func Item(item string) (*api.EmbyItem, error) {
 		return nil, err
 	}
 
-	resp, err := embyClient.Get("/emby/Users/"+embyClient.EmbyUser()+"/Items/"+item, url.Values{})
+	resp, err := embyClient.Get(embyClient.EmbyUserEndpoint("Items", item), url.Values{})
 	if err != nil {
 		return nil, err
 	}

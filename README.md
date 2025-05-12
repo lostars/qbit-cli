@@ -48,7 +48,7 @@ emby:
 Emby user must be provided to use `/emby/Users/{user}/Items/{item}` api 
 which is used by `emby item info <item>` command.
 
-Be aware of your Emby API Key permissions(Administrator is better)
+Be aware of your user permissions, `emby` command use `/emby/Users/**` apis.
 
 ## Commands
 

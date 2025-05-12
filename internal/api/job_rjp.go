@@ -163,5 +163,5 @@ func parseJPName(fileName string, folder string) string {
 
 var JPCodeRegex = regexp.MustCompile(`([a-zA-Z]{2,5}-[0-9]{3,5}|FC2-PPV-\d{5,})`)
 var JP4KRegex = regexp.MustCompile(`([-\[])(4[kK])`)
-var JPPartsRegex = regexp.MustCompile(`\d+([-_]|-cd)([1-5])`)
+var JPPartsRegex = regexp.MustCompile(`\d+([-_]|-cd)([1-5])^[kK]`)
 var JPCNRegex = regexp.MustCompile(`\d+(-[cC]|ch)`)

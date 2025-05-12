@@ -1,27 +1,44 @@
-package cmd
+package api
 
 import (
 	"fmt"
 	"github.com/spf13/cobra"
 	"net/url"
 	"path/filepath"
-	"qbit-cli/internal/api"
 	"regexp"
 	"strings"
 )
 
-func RenameJP() *cobra.Command {
+type RenameJP struct{}
 
-	jp := &cobra.Command{
-		Use:   "jp [flags]",
-		Short: "Auto rename jp video filename and directory",
-		Long: `You may use [flags] to filter you JP torrents.
+func (r *RenameJP) JobName() string {
+	return "rjp"
+}
+
+func (r *RenameJP) Description() string {
+	return `You may use [flags] to filter you JP torrents.
 Only support torrent that contains one single jp video code.
 Only rename files those are selected to download.
 Torrent file struct supported as follows(file extension not mattered):
 a.mp4
 folder/a.mp4
-`,
+`
+}
+
+func (_ *RenameJP) Tags() []string {
+	return []string{"qBittorrent"}
+}
+
+func init() {
+	RegisterJob(&RenameJP{})
+}
+
+func (r *RenameJP) Command() *cobra.Command {
+
+	jp := &cobra.Command{
+		Use:   r.JobName(),
+		Short: "Auto rename jp video filename and directory",
+		Long:  r.Description(),
 	}
 
 	var (
@@ -50,7 +67,7 @@ running, stalled, stalled_uploading, stalled_downloading, errored`)
 			params.Set("category", category)
 		}
 
-		torrentList, err := api.TorrentList(params)
+		torrentList, err := TorrentList(params)
 		if err != nil {
 			return err
 		}
@@ -58,7 +75,7 @@ running, stalled, stalled_uploading, stalled_downloading, errored`)
 		fmt.Printf("total size: %d\n", len(torrentList))
 		for _, t := range torrentList {
 			// get torrent files
-			fileList, err := api.TorrentFiles(url.Values{"hash": {t.Hash}})
+			fileList, err := TorrentFiles(url.Values{"hash": {t.Hash}})
 			if fileList == nil {
 				fmt.Println(err.Error())
 				continue
@@ -78,8 +95,8 @@ running, stalled, stalled_uploading, stalled_downloading, errored`)
 						continue
 					}
 					if newPath := jpCode + filepath.Ext(files[0]); newPath != files[0] {
-						if api.TorrentRenameFile(t.Hash, file.Name, newPath) != nil {
-							fmt.Printf("hash:[%s] new path: %s rename file failed: %v\n", t.Hash, newPath)
+						if err := TorrentRenameFile(t.Hash, file.Name, newPath); err != nil {
+							fmt.Printf("hash:[%s] new path: %s rename file failed: %v\n", t.Hash, newPath, err)
 						}
 					}
 				} else if l == 2 {
@@ -89,13 +106,13 @@ running, stalled, stalled_uploading, stalled_downloading, errored`)
 					}
 					// rename only when name changed
 					if newFolder != files[0] {
-						if err := api.TorrentRenameFolder(t.Hash, files[0], newFolder); err != nil {
+						if err := TorrentRenameFolder(t.Hash, files[0], newFolder); err != nil {
 							fmt.Printf("[%s] %s -> %s renameFolder failed\n", t.Hash, files[0], newFolder)
 						}
 					}
 					newPath := newFolder + "/" + parseJPName(files[1], files[0]) + filepath.Ext(files[1])
 					if newPath != file.Name {
-						if err := api.TorrentRenameFile(t.Hash, file.Name, newPath); err != nil {
+						if err := TorrentRenameFile(t.Hash, file.Name, newPath); err != nil {
 							fmt.Printf("[%s] %s -> %s renameFile failed\n", t.Hash, file.Name, newPath)
 						}
 					}

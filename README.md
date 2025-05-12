@@ -73,19 +73,14 @@ rule    # rule -h for details
 sub     # sub -h for details
 ```
 
-### rename
+### job
+
+`job [job] -h` for details.
 
 ```
-jp      # auto rename your JP torrents rename jp -h for more details
+list      # job list
+run       # run job by name
 ```
-
-**jp**
-
-Supports: 
-* `4k` tag
-* Emby `cd1` file parts
-* `-C` Chinese subtitle tag
-* single file or `test/test.mp4`
 
 ### plugin
 

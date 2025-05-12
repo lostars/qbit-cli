@@ -40,7 +40,6 @@ same as executable file named config.yaml
 	}
 
 	rootCmd.AddCommand(TorrentCmd())
-	rootCmd.AddCommand(RenameCmd())
 	rootCmd.AddCommand(RssCmd())
 	rootCmd.AddCommand(PluginCmd())
 	rootCmd.AddCommand(JackettCmd())

@@ -101,8 +101,8 @@ func (c *EmbyClient) Get(endpoint string, params url.Values) (*http.Response, er
 		return nil, &HTTPClientError{"Get", fullUrl, err}
 	}
 	req.Header.Set("X-Emby-Token", c.embyApiKey())
-	req.Header.Set("X-Emby-Client", c.embyApiKey())
-	req.Header.Set("X-Emby-Device-Name", c.embyApiKey())
+	req.Header.Set("X-Emby-Client", "qbit-cli")
+	req.Header.Set("X-Emby-Device-Name", "qbit-cli")
 	resp, err := c.Client.Do(req)
 	if err != nil {
 		return nil, err

@@ -36,30 +36,35 @@ func TruncateString(str string, start int, end int) string {
 	return string(runes[start:end])
 }
 
-func PrintList(headers []string, data *[][]string) {
+func PrintListWithCellConfig(headers []string, data *[][]string, cell tw.CellConfig) {
 	table := tablewriter.NewTable(os.Stdout,
 		tablewriter.WithConfig(tablewriter.Config{
-			Row: tw.CellConfig{
-				Formatting: tw.CellFormatting{
-					MaxWidth:  50,              // Limit column width
-					AutoWrap:  tw.WrapTruncate, // Wrap long content
-					Alignment: tw.AlignNone,    // Left-align rows
-				},
-			},
+			Row: cell,
 		}),
 	)
 
 	table.Header(headers)
 	err := table.Bulk(*data)
 	if err != nil {
-		fmt.Printf("PrintList error: %v\n", err)
+		fmt.Printf("PrintListWithCellConfig error: %v\n", err)
 		return
 	}
 	err = table.Render()
 	if err != nil {
-		fmt.Printf("PrintList error: %v\n", err)
+		fmt.Printf("PrintListWithCellConfig error: %v\n", err)
 		return
 	}
+}
+
+func PrintList(headers []string, data *[][]string) {
+	c := tw.CellConfig{
+		Formatting: tw.CellFormatting{
+			MaxWidth:  50,
+			AutoWrap:  tw.WrapTruncate,
+			Alignment: tw.AlignNone,
+		},
+	}
+	PrintListWithCellConfig(headers, data, c)
 }
 
 const (

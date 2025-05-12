@@ -6,7 +6,6 @@ import (
 	"github.com/spf13/cobra"
 	"net/url"
 	"qbit-cli/internal/api"
-	"qbit-cli/pkg/utils"
 	"regexp"
 	"strconv"
 	"time"
@@ -21,7 +20,8 @@ func TorrentSearch() *cobra.Command {
 		Short: "Search torrents through qBittorrent plugins",
 		Long: `Be attention when you enable auto download,
 and ensure that torrent-regex works properly to void unnecessary downloads.
-Auto download calls "qbit torrent add ...", which means it also reads default save values of torrent part on config file
+Auto download calls "qbit torrent add ...", which means it also reads default save values of torrent part on config file.
+This list will show as k:v caused by long magnet display.
 `,
 		Example: `qbit torrent search <keyword> --category=movie --plugins=bt4g`,
 		Args: func(cmd *cobra.Command, args []string) error {
@@ -99,12 +99,10 @@ make sure you plugin is valid and enabled`)
 		}
 
 		fmt.Printf("total search result size: %d\n", len(printList))
-		headers := []string{"fileName", "Url"}
-		data := make([][]string, len(printList))
 		for _, r := range printList {
-			data = append(data, []string{r.FileName, r.FileURL})
+			fmt.Printf("%s : %s\n\n", r.FileName, r.FileURL)
 		}
-		utils.PrintList(headers, &data)
+
 		if autoDownload {
 			download(urls, autoMM, savePath, saveCategory, saveTags)
 		}

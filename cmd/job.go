@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"github.com/olekukonko/tablewriter/tw"
 	"github.com/spf13/cobra"
 	"qbit-cli/internal/api"
 	"qbit-cli/pkg/utils"
@@ -41,7 +42,15 @@ func JobList() *cobra.Command {
 			}
 			data = append(data, []string{v.JobName(), fmt.Sprintf("%v", tags), description})
 		}
-		utils.PrintList(header, &data)
+
+		c := tw.CellConfig{
+			Formatting: tw.CellFormatting{
+				MaxWidth:  100,
+				AutoWrap:  tw.WrapNormal,
+				Alignment: tw.AlignNone,
+			},
+		}
+		utils.PrintListWithCellConfig(header, &data, c)
 
 		return nil
 	}

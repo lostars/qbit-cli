@@ -1,12 +1,13 @@
 package cmd
 
 import (
+	"fmt"
 	"github.com/spf13/cobra"
 	"os"
 	"qbit-cli/internal/config"
 )
 
-func Execute() {
+func Execute(version string) {
 
 	rootCmd := &cobra.Command{
 		Use:   "qbit",
@@ -24,7 +25,19 @@ same as executable file named config.yaml
 		SilenceUsage: true,
 	}
 
+	var (
+		showVersion bool
+	)
+
 	rootCmd.PersistentFlags().StringVarP(&config.CfgPath, "config", "c", "", "qbit config file path")
+	rootCmd.Flags().BoolVarP(&showVersion, "version", "v", false, "qbit cli version")
+
+	rootCmd.RunE = func(cmd *cobra.Command, args []string) error {
+		if showVersion {
+			fmt.Println(version)
+		}
+		return nil
+	}
 
 	rootCmd.AddCommand(TorrentCmd())
 	rootCmd.AddCommand(RenameCmd())

@@ -2,6 +2,10 @@ package main
 
 import "qbit-cli/cmd"
 
+var (
+	Version = "none"
+)
+
 func main() {
-	cmd.Execute()
+	cmd.Execute(Version)
 }

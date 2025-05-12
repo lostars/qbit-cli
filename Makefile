@@ -1,5 +1,5 @@
 BINARY_NAME=qbit
-LDFLAGS=-ldflags "-X main.Version=$(VERSION) -w -s"
+LDFLAGS=-ldflags "-X main.Version=dev -w -s"
 
 .PHONY: build deps
 

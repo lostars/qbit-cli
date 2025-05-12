@@ -70,7 +70,7 @@ make sure you plugin is valid and enabled`)
 			return err
 		}
 
-		results, err := api.SearchDetails(1*time.Second, result.ID, params)
+		results, err := api.SearchDetails(1*time.Second, result.ID)
 		if err != nil {
 			return nil
 		}
@@ -86,7 +86,7 @@ make sure you plugin is valid and enabled`)
 		}
 
 		var urls []string
-		var printList = make([]api.SearchDetail, 0, len(results))
+		var printList = make([]*api.SearchDetail, 0, len(results))
 		for _, r := range results {
 			if re == nil {
 				printList = append(printList, r)

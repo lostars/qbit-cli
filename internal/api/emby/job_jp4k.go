@@ -82,7 +82,7 @@ func (j *JP4K) RunCommand() *cobra.Command {
 				fmt.Printf("search start error: %s\n", err)
 				continue
 			}
-			results, err := api.SearchDetails(1*time.Second, result.ID, params)
+			results, err := api.SearchDetails(1*time.Second, result.ID)
 			if err != nil {
 				fmt.Printf("search details error: %s\n", err)
 				continue
@@ -90,7 +90,7 @@ func (j *JP4K) RunCommand() *cobra.Command {
 
 			for _, r := range results {
 				if api.JP4KRegex.MatchString(r.FileName) {
-					data = append(data, &r)
+					data = append(data, r)
 				}
 			}
 		}

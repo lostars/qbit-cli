@@ -43,6 +43,7 @@ func (r *RenameJP) RunCommand() *cobra.Command {
 
 	var (
 		filter, category, hashes, tag string
+		renameTorrent                 bool
 	)
 
 	jp.Flags().StringVar(&filter, "filter", "", `state filter:
@@ -51,6 +52,7 @@ running, stalled, stalled_uploading, stalled_downloading, errored`)
 	jp.Flags().StringVar(&category, "category", "", "category filter")
 	jp.Flags().StringVar(&tag, "tag", "", "tag filter")
 	jp.Flags().StringVar(&hashes, "hashes", "", "hash filter separated by |'")
+	jp.Flags().BoolVar(&renameTorrent, "rename-torrent", false, "whether to rename torrent files")
 
 	jp.RunE = func(cmd *cobra.Command, args []string) error {
 		params := url.Values{}
@@ -94,16 +96,19 @@ running, stalled, stalled_uploading, stalled_downloading, errored`)
 					if jpCode == "" {
 						continue
 					}
+					rename(renameTorrent, t, jpCode)
 					if newPath := jpCode + filepath.Ext(files[0]); newPath != files[0] {
 						if err := TorrentRenameFile(t.Hash, file.Name, newPath); err != nil {
 							fmt.Printf("hash:[%s] new path: %s rename file failed: %v\n", t.Hash, newPath, err)
 						}
+						rename(renameTorrent, t, jpCode)
 					}
 				} else if l == 2 {
 					newFolder := parseJPCode(files[1], files[0])
 					if newFolder == "" {
 						continue
 					}
+					rename(renameTorrent, t, newFolder)
 					// rename only when name changed
 					if newFolder != files[0] {
 						if err := TorrentRenameFolder(t.Hash, files[0], newFolder); err != nil {
@@ -124,6 +129,16 @@ running, stalled, stalled_uploading, stalled_downloading, errored`)
 	}
 
 	return jp
+}
+
+func rename(rename bool, t Torrent, name string) {
+	if !rename || t.Name == name {
+		return
+	}
+	err := RenameTorrent(t.Hash, name)
+	if err != nil {
+		fmt.Printf("%s rename failed: %v\n", t.Hash, err)
+	}
 }
 
 func parseJPCode(fileName string, folder string) string {

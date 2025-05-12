@@ -9,3 +9,7 @@ torrent:
 jackett:
   host: ""
   api-key: ""
+emby:
+  host: ""
+  api-key: ""
+  user: ""

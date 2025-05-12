@@ -33,7 +33,7 @@ func init() {
 	RegisterJob(&RenameJP{})
 }
 
-func (r *RenameJP) Command() *cobra.Command {
+func (r *RenameJP) RunCommand() *cobra.Command {
 
 	jp := &cobra.Command{
 		Use:   r.JobName(),

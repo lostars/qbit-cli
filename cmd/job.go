@@ -57,7 +57,7 @@ func RunJob() *cobra.Command {
 
 	jobs := api.ListJobs()
 	for _, job := range jobs {
-		run.AddCommand(job.Command())
+		run.AddCommand(job.RunCommand())
 	}
 
 	return run

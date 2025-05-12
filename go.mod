@@ -3,7 +3,7 @@ module qbit-cli
 go 1.24
 
 require (
-	github.com/olekukonko/tablewriter v1.0.1
+	github.com/olekukonko/tablewriter v1.0.2
 	github.com/spf13/cobra v1.9.1
 	gopkg.in/yaml.v3 v3.0.1
 )

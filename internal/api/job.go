@@ -7,7 +7,7 @@ import (
 
 type Job interface {
 	JobName() string
-	Command() *cobra.Command
+	RunCommand() *cobra.Command
 }
 
 type Description interface {

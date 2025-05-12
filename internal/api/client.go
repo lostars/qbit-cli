@@ -94,15 +94,15 @@ func (c *EmbyClient) Get(endpoint string, params url.Values) (*http.Response, er
 	if params == nil {
 		params = url.Values{}
 	}
-	params.Add("X-Emby-Token", c.embyApiKey())
-	params.Add("X-Emby-Client", "qbit-cli")
-	params.Add("X-Emby-Device-Name", "qbit-cli")
 	fullUrl += "?" + params.Encode()
 
 	req, err := http.NewRequest(http.MethodGet, fullUrl, nil)
 	if err != nil {
 		return nil, &HTTPClientError{"Get", fullUrl, err}
 	}
+	req.Header.Set("X-Emby-Token", c.embyApiKey())
+	req.Header.Set("X-Emby-Client", c.embyApiKey())
+	req.Header.Set("X-Emby-Device-Name", c.embyApiKey())
 	resp, err := c.Client.Do(req)
 	if err != nil {
 		return nil, err

@@ -177,7 +177,7 @@ func (c *QbitClient) PostForm(endpoint string, params url.Values, fields string,
 	writer := multipart.NewWriter(body)
 	for key, values := range params {
 		for _, value := range values {
-			_ = writer.WriteField(key, url.QueryEscape(value))
+			_ = writer.WriteField(key, value)
 		}
 	}
 

@@ -143,9 +143,34 @@ func UpdateTorrent(operation string, params url.Values) error {
 	if err != nil {
 		return err
 	}
-
+	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
 		return &QbitClientError{resp.Status, "TorrentUpdate: " + operation, nil}
 	}
+	return nil
+}
+
+func TagList() ([]string, error) {
+	resp, err := GetQbitClient().Get("/api/v2/torrents/tags", url.Values{})
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	var tagList []string
+	if err := ParseJSON(resp, &tagList); err != nil {
+		return nil, err
+	}
+	return tagList, nil
+}
+
+// TagUpdate deleteTags createTags
+func TagUpdate(operation string, name []string) error {
+	params := url.Values{}
+	params.Set("tags", strings.Join(name, ","))
+	resp, err := GetQbitClient().Post("/api/v2/torrents/"+operation, params)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
 	return nil
 }

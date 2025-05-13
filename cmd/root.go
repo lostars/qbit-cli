@@ -16,7 +16,7 @@ func Execute(version string) {
 
 You may found working properly on other version of qBittorrent.
 You can find webui api here:
-https://github.com/qbittorrent/qBittorrent/wiki/WebUI-API-(qBittorrent-5.0)
+https://github.com/qbittorrent/qBittorrent/wiki/WebUI-API-%28qBittorrent-5.0%29
 
 Default config location:
 ~/.config/qbit-cli/config.yaml

@@ -9,7 +9,7 @@ type SearchResults struct {
 type SearchDetail struct {
 	DescLink   string `json:"descrLink"`
 	FileName   string `json:"fileName"`
-	FileSize   uint64 `json:"fileSize"`
+	FileSize   int64  `json:"fileSize"`
 	FileURL    string `json:"fileUrl"`
 	NBLeechers uint32 `json:"nbLeechers"`
 	NBSeeders  uint32 `json:"nbSeeders"`

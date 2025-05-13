@@ -103,27 +103,26 @@ make sure you plugin is valid and enabled`)
 			fmt.Printf("%s : %s\n\n", r.FileName, r.FileURL)
 		}
 
-		if autoDownload {
-			download(urls, autoMM, savePath, saveCategory, saveTags)
+		if autoDownload && len(printList) > 0 {
+			var downloadList = make([]string, 0, len(printList))
+			for _, r := range printList {
+				downloadList = append(downloadList, r.FileURL)
+			}
+			addParams := url.Values{}
+			addParams.Set("category", saveCategory)
+			addParams.Set("tags", saveTags)
+			addParams.Set("auto-manage", strconv.FormatBool(autoMM))
+			addParams.Set("save-path", savePath)
+			LoadTorrentAddDefault(addParams)
+			if err := api.TorrentAdd(downloadList, addParams); err != nil {
+				fmt.Println("auto download failed:", err)
+			} else {
+				fmt.Printf("auto download %d torrent(s) success\n", len(urls))
+			}
 		}
 
 		return nil
 	}
 
 	return searchCmd
-}
-
-func download(urls []string, autoMM bool, savePath, saveCategory, saveTags string) {
-
-	addCmd := TorrentAdd()
-	_ = addCmd.Flags().Set("category", saveCategory)
-	_ = addCmd.Flags().Set("tags", saveTags)
-	_ = addCmd.Flags().Set("auto-manage", strconv.FormatBool(autoMM))
-	_ = addCmd.Flags().Set("save-path", savePath)
-	addCmd.SetArgs(urls)
-	if err := addCmd.Execute(); err != nil {
-		fmt.Println("auto download failed:", err)
-	} else {
-		fmt.Printf("auto download %d torrent(s) success\n", len(urls))
-	}
 }

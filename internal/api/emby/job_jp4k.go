@@ -7,7 +7,6 @@ import (
 	"qbit-cli/internal/api"
 	"qbit-cli/internal/config"
 	"strconv"
-	"strings"
 	"time"
 )
 
@@ -145,7 +144,6 @@ func fourKItems() []*api.EmbyItem {
 
 func addTorrents(urls []string, autoTMM bool, category, tags, savePath string) error {
 	params := url.Values{
-		"urls":    {strings.Join(urls, "\n")},
 		"autoTMM": {strconv.FormatBool(autoTMM)},
 	}
 
@@ -161,7 +159,7 @@ func addTorrents(urls []string, autoTMM bool, category, tags, savePath string) e
 		savePath = cfg.Torrent.DefaultSavePath
 	}
 
-	if err := api.TorrentAdd(params); err != nil {
+	if err := api.TorrentAdd(urls, params); err != nil {
 		return err
 	}
 	return nil

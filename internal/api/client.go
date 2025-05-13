@@ -1,10 +1,15 @@
 package api
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
+	"mime/multipart"
 	"net/http"
 	"net/url"
+	"os"
+	"path/filepath"
 	"qbit-cli/internal/config"
 	"strings"
 	"time"
@@ -21,6 +26,7 @@ var client *QbitClient
 
 func GetQbitClient() *QbitClient {
 	if client != nil {
+		client.login()
 		return client
 	}
 
@@ -32,6 +38,7 @@ func GetQbitClient() *QbitClient {
 		Headers:  make(map[string]string),
 		Client:   &http.Client{Timeout: time.Second * 10},
 	}
+	client.login()
 	return client
 }
 
@@ -124,8 +131,6 @@ func ParseRawJSON(resp *http.Response) (string, error) {
 }
 
 func (c *QbitClient) Get(endpoint string, params url.Values) (*http.Response, error) {
-	c.login()
-
 	fullUrl := c.host() + endpoint
 	if params != nil && len(params) > 0 {
 		fullUrl += "?" + params.Encode()
@@ -149,8 +154,6 @@ func (c *QbitClient) Get(endpoint string, params url.Values) (*http.Response, er
 }
 
 func (c *QbitClient) Post(endpoint string, params url.Values) (*http.Response, error) {
-	c.login()
-
 	fullUrl := c.host() + endpoint
 	req, err := http.NewRequest(http.MethodPost, fullUrl, strings.NewReader(params.Encode()))
 	if err != nil {
@@ -166,6 +169,45 @@ func (c *QbitClient) Post(endpoint string, params url.Values) (*http.Response, e
 		return nil, &HTTPClientError{"Post", fullUrl, err}
 	}
 
+	return resp, nil
+}
+
+func (c *QbitClient) PostForm(endpoint string, params url.Values, fields string, files []*os.File) (*http.Response, error) {
+	body := &bytes.Buffer{}
+	writer := multipart.NewWriter(body)
+	for key, values := range params {
+		for _, value := range values {
+			_ = writer.WriteField(key, url.QueryEscape(value))
+		}
+	}
+
+	for _, file := range files {
+		part, err := writer.CreateFormFile(fields, filepath.Base(file.Name()))
+		if err != nil {
+			return nil, err
+		}
+		_, err = io.Copy(part, file)
+		if err != nil {
+			return nil, err
+		}
+	}
+	err := writer.Close()
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, c.host()+endpoint, body)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Content-Type", writer.FormDataContentType())
+	for k, v := range c.Headers {
+		req.Header.Set(k, v)
+	}
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
 	return resp, nil
 }
 

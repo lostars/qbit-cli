@@ -7,7 +7,6 @@ import (
 	"qbit-cli/internal/api"
 	"qbit-cli/internal/config"
 	"strconv"
-	"strings"
 )
 
 func TorrentAdd() *cobra.Command {
@@ -16,6 +15,9 @@ func TorrentAdd() *cobra.Command {
 		Short: "Add one or more torrent",
 		Long: `You can set default save values in config file to save your time.
 Attention: auto management is enabled by default, so make sure your qBittorrent if configured properly.
+This method can add torrents from server local file or from URLs.
+http://, https://, magnet: and bc://bt/ links are supported.
+You can add torrent like: add /t/xx.torrent "magnet:xxx"
 `,
 		Args: func(cmd *cobra.Command, args []string) error {
 			if len(args) < 1 {
@@ -37,21 +39,7 @@ Attention: auto management is enabled by default, so make sure your qBittorrent 
 	addCmd.Flags().StringVar(&savePath, "save-path", "", "torrent save path")
 
 	addCmd.RunE = func(cmd *cobra.Command, args []string) error {
-
-		cfg := config.GetConfig()
-		// load defaults from config file
-		if category == "" {
-			category = cfg.Torrent.DefaultSaveCategory
-		}
-		if tags == "" {
-			tags = cfg.Torrent.DefaultSaveTags
-		}
-		if savePath == "" {
-			savePath = cfg.Torrent.DefaultSavePath
-		}
-
 		params := url.Values{
-			"urls":    {strings.Join(args, "\n")},
 			"autoTMM": {strconv.FormatBool(autoTMM)},
 		}
 		if tags != "" {
@@ -63,8 +51,9 @@ Attention: auto management is enabled by default, so make sure your qBittorrent 
 		if savePath != "" && !autoTMM {
 			params.Add("savepath", savePath)
 		}
+		LoadTorrentAddDefault(params)
 
-		if err := api.TorrentAdd(params); err != nil {
+		if err := api.TorrentAdd(args, params); err != nil {
 			return err
 		}
 
@@ -72,4 +61,18 @@ Attention: auto management is enabled by default, so make sure your qBittorrent 
 	}
 
 	return addCmd
+}
+
+func LoadTorrentAddDefault(params url.Values) {
+	cfg := config.GetConfig()
+	// load defaults from config file
+	if params.Get("category") == "" {
+		params.Set("category", cfg.Torrent.DefaultSaveCategory)
+	}
+	if params.Get("tags") == "" {
+		params.Set("tags", cfg.Torrent.DefaultSaveCategory)
+	}
+	if params.Get("savepath") == "" {
+		params.Set("savepath", cfg.Torrent.DefaultSavePath)
+	}
 }

@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"os"
+	"strings"
 )
 
 // https://github.com/qbittorrent/qBittorrent/wiki/WebUI-API-(qBittorrent-5.0)
@@ -23,16 +25,47 @@ func TorrentList(params url.Values) ([]Torrent, error) {
 	return torrentList, nil
 }
 
-func TorrentAdd(params url.Values) error {
-	resp, err := GetQbitClient().Post("/api/v2/torrents/add", params)
-	if err != nil {
-		return err
+func TorrentAdd(urls []string, params url.Values) error {
+	var localFiles = make([]*os.File, 0, len(urls))
+	var netUrl = make([]string, 0, len(urls))
+	for _, path := range urls {
+		file, _ := os.Open(path)
+		if file != nil {
+			localFiles = append(localFiles, file)
+		} else {
+			netUrl = append(netUrl, path)
+		}
 	}
-	defer resp.Body.Close()
+	c := GetQbitClient()
+	if len(localFiles) > 0 {
+		params.Del("urls")
+		resp, err := c.PostForm("/api/v2/torrents/add", params, "torrents", localFiles)
+		if err != nil {
+			fmt.Println(err)
+		} else if resp.StatusCode == http.StatusUnsupportedMediaType {
+			fmt.Println("file is not valid")
+		} else if resp.StatusCode != http.StatusOK {
+			fmt.Println(resp.Status)
+		}
+		resp.Body.Close()
+		for _, file := range localFiles {
+			file.Close()
+		}
+	}
 
-	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("torrent add fail: %s", resp.Status)
+	if len(netUrl) > 0 {
+		params.Set("urls", strings.Join(netUrl, "\n"))
+		resp, err := c.Post("/api/v2/torrents/add", params)
+		if err != nil {
+			return err
+		}
+		defer resp.Body.Close()
+
+		if resp.StatusCode != http.StatusOK {
+			return fmt.Errorf("torrent add fail: %s", resp.Status)
+		}
 	}
+
 	return nil
 }
 

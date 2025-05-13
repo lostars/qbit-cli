@@ -19,11 +19,11 @@ func TorrentList() *cobra.Command {
 	}
 
 	var (
-		filter, category, hashes, tag string
-		limit, offset                 uint32
+		state, category, hashes, tag string
+		limit, offset                uint32
 	)
 
-	listCmd.Flags().StringVar(&filter, "filter", "", `state filter:
+	listCmd.Flags().StringVar(&state, "state", "", `state filter:
 all, downloading, seeding, completed, stopped, active, inactive, running, 
 stalled, stalled_uploading, stalled_downloading, errored`)
 	listCmd.Flags().StringVar(&category, "category", "", "category filter")
@@ -34,8 +34,8 @@ stalled, stalled_uploading, stalled_downloading, errored`)
 
 	listCmd.RunE = func(cmd *cobra.Command, args []string) error {
 		var params = url.Values{}
-		if filter != "" {
-			params.Set("filter", filter)
+		if state != "" {
+			params.Set("filter", state)
 		}
 		if category != "" {
 			// category must be encoded

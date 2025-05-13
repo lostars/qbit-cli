@@ -3,7 +3,10 @@ package cmd
 import (
 	"errors"
 	"github.com/spf13/cobra"
+	"net/url"
 	"qbit-cli/internal/api"
+	"strconv"
+	"strings"
 )
 
 func TorrentCmd() *cobra.Command {
@@ -18,8 +21,43 @@ func TorrentCmd() *cobra.Command {
 	torrentCmd.AddCommand(TorrentSearch())
 	torrentCmd.AddCommand(RenameTorrentCmd())
 	torrentCmd.AddCommand(TorrentUpdate())
+	torrentCmd.AddCommand(DeleteTorrents())
 
 	return torrentCmd
+}
+
+func DeleteTorrents() *cobra.Command {
+	var cmd = &cobra.Command{
+		Use:   "delete <hashes>...",
+		Short: "Delete torrents",
+	}
+
+	var deleteFiles, all bool
+	cmd.Flags().BoolVar(&deleteFiles, "delete-files", false, "delete files")
+	cmd.Flags().BoolVar(&all, "all", false, "delete all torrents")
+
+	cmd.RunE = func(cmd *cobra.Command, args []string) error {
+		hashes := strings.Join(args, "|")
+		if all {
+			hashes = "all"
+		} else {
+			if len(args) < 1 {
+				return errors.New("torrent update requires at least a hash")
+			}
+		}
+
+		params := url.Values{}
+		params.Set("hashes", hashes)
+		params.Set("deleteFiles", strconv.FormatBool(all))
+		err := api.UpdateTorrent("delete", params)
+		if err != nil {
+			return err
+		}
+
+		return nil
+	}
+
+	return cmd
 }
 
 func RenameTorrentCmd() *cobra.Command {

@@ -132,3 +132,20 @@ func RenameTorrent(hash string, name string) error {
 	}
 	return nil
 }
+
+func TorrentUpdate(operation string, params url.Values) error {
+	c, err := GetQbitClient()
+	if err != nil {
+		return err
+	}
+
+	resp, err := c.Post("/api/v2/torrents/"+operation, params)
+	if err != nil {
+		return err
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		return &QbitClientError{resp.Status, "TorrentUpdate: " + operation, nil}
+	}
+	return nil
+}

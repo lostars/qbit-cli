@@ -14,7 +14,7 @@ func RssSub() *cobra.Command {
 	}
 
 	cmd.AddCommand(SubList())
-	cmd.AddCommand(RemoveSub())
+	cmd.AddCommand(DeleteSub())
 	cmd.AddCommand(SubAdd())
 
 	return cmd
@@ -89,10 +89,10 @@ func SubList() *cobra.Command {
 	return cmd
 }
 
-func RemoveSub() *cobra.Command {
+func DeleteSub() *cobra.Command {
 	var cmd = &cobra.Command{
-		Use:   "rm <rss>",
-		Short: "remove feeds by name",
+		Use:   "delete <rss>",
+		Short: "Delete feeds by name",
 		Args: func(c *cobra.Command, args []string) error {
 			if len(args) < 1 {
 				return errors.New("rm requires at least one rss name")

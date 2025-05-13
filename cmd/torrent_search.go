@@ -20,7 +20,7 @@ func TorrentSearch() *cobra.Command {
 		Short: "Search torrents through qBittorrent plugins",
 		Long: `Be attention when you enable auto download,
 and ensure that torrent-regex works properly to void unnecessary downloads.
-Auto download calls "qbit torrent add ...", which means it also reads default save values of torrent part on config file.
+Auto download calls "torrent add ...", which means it also reads default save values of torrent part on config file.
 This list will show as k:v caused by long magnet display.
 `,
 		Example: `qbit torrent search <keyword> --category=movie --plugins=bt4g`,
@@ -46,7 +46,7 @@ make sure you plugin is valid and enabled`)
 
 	// auto download flags
 	searchCmd.Flags().BoolVar(&autoDownload, "auto-download", false, "Attention: if true, it will auto download all the torrents that filter by torrent-regex")
-	searchCmd.Flags().BoolVar(&autoMM, "auto-management", true, "whether enable torrent auto management default is true, valid only when auto download enabled")
+	searchCmd.Flags().BoolVar(&autoMM, "auto-manage", true, "whether enable torrent auto management default is true, valid only when auto download enabled")
 	// auto download save flags
 	searchCmd.Flags().StringVar(&saveCategory, "save-category", "", "torrent save category, valid only when auto download enabled")
 	searchCmd.Flags().StringVar(&savePath, "save-path", "", "torrent save path, valid only when auto download enabled")
@@ -118,7 +118,7 @@ func download(urls []string, autoMM bool, savePath, saveCategory, saveTags strin
 	addCmd := TorrentAdd()
 	_ = addCmd.Flags().Set("category", saveCategory)
 	_ = addCmd.Flags().Set("tags", saveTags)
-	_ = addCmd.Flags().Set("auto-management", strconv.FormatBool(autoMM))
+	_ = addCmd.Flags().Set("auto-manage", strconv.FormatBool(autoMM))
 	_ = addCmd.Flags().Set("save-path", savePath)
 	addCmd.SetArgs(urls)
 	if err := addCmd.Execute(); err != nil {

@@ -12,12 +12,11 @@ import (
 
 func TorrentAdd() *cobra.Command {
 	addCmd := &cobra.Command{
-		Use:   "add <torrent url> ... [flags]",
-		Short: "Add torrent, you can add one or more torrents seperated by blank space",
+		Use:   "add <torrent url>...",
+		Short: "Add one or more torrent",
 		Long: `You can set default save values in config file to save your time.
 Attention: auto management is enabled by default, so make sure your qBittorrent if configured properly.
 `,
-		Example: `qbit torrent add 'magnet:xxxx' 'xx' --category=abc --tags=a,b,c --auto-management --save-path=/ab/c`,
 		Args: func(cmd *cobra.Command, args []string) error {
 			if len(args) < 1 {
 				return errors.New("requires at least one torrent url")
@@ -34,7 +33,7 @@ Attention: auto management is enabled by default, so make sure your qBittorrent 
 	)
 	addCmd.Flags().StringVar(&category, "category", "", "torrent category")
 	addCmd.Flags().StringVar(&tags, "tags", "", "torrent tags split by ','")
-	addCmd.Flags().BoolVar(&autoTMM, "auto-management", true, "Whether Automatic Torrent Management should be used, default is true")
+	addCmd.Flags().BoolVar(&autoTMM, "auto-manage", true, "Whether Automatic Torrent Management should be used, default is true")
 	addCmd.Flags().StringVar(&savePath, "save-path", "", "torrent save path")
 
 	addCmd.RunE = func(cmd *cobra.Command, args []string) error {

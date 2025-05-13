@@ -17,6 +17,7 @@ func TorrentCmd() *cobra.Command {
 	torrentCmd.AddCommand(TorrentFiles())
 	torrentCmd.AddCommand(TorrentSearch())
 	torrentCmd.AddCommand(RenameTorrentCmd())
+	torrentCmd.AddCommand(TorrentUpdate())
 
 	return torrentCmd
 }

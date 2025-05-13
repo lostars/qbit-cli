@@ -144,7 +144,7 @@ func TorrentUpdate() *cobra.Command {
 }
 
 func update(operation string, params url.Values) {
-	err := api.TorrentUpdate(operation, params)
+	err := api.UpdateTorrent(operation, params)
 	if err != nil {
 		fmt.Printf("%s %s failed: %v\n", params.Get("hashes"), operation, err)
 	} else {

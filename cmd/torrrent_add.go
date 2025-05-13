@@ -38,15 +38,15 @@ Attention: auto management is enabled by default, so make sure your qBittorrent 
 
 	addCmd.RunE = func(cmd *cobra.Command, args []string) error {
 
-		cfg, _ := config.GetConfig()
+		cfg := config.GetConfig()
 		// load defaults from config file
-		if category == "" && cfg != nil {
+		if category == "" {
 			category = cfg.Torrent.DefaultSaveCategory
 		}
-		if tags == "" && cfg != nil {
+		if tags == "" {
 			tags = cfg.Torrent.DefaultSaveTags
 		}
-		if savePath == "" && cfg != nil {
+		if savePath == "" {
 			savePath = cfg.Torrent.DefaultSavePath
 		}
 

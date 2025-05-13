@@ -19,15 +19,12 @@ type QbitClient struct {
 
 var client *QbitClient
 
-func GetQbitClient() (*QbitClient, error) {
+func GetQbitClient() *QbitClient {
 	if client != nil {
-		return client, nil
+		return client
 	}
 
-	cfg, err := config.GetConfig()
-	if err != nil {
-		return nil, err
-	}
+	cfg := config.GetConfig()
 
 	client = &QbitClient{
 		needAuth: cfg.Server.Username != "" && cfg.Server.Password != "",
@@ -35,7 +32,7 @@ func GetQbitClient() (*QbitClient, error) {
 		Headers:  make(map[string]string),
 		Client:   &http.Client{Timeout: time.Second * 10},
 	}
-	return client, nil
+	return client
 }
 
 func (c *QbitClient) host() string {
@@ -55,20 +52,16 @@ type EmbyClient struct {
 
 var embyClient *EmbyClient
 
-func GetEmbyClient() (*EmbyClient, error) {
+func GetEmbyClient() *EmbyClient {
 	if embyClient != nil {
-		return embyClient, nil
-	}
-	cfg, err := config.GetConfig()
-	if err != nil {
-		return nil, err
+		return embyClient
 	}
 	embyClient = &EmbyClient{
-		Config: cfg,
+		Config: config.GetConfig(),
 		Client: &http.Client{Timeout: time.Second * 10},
 	}
 
-	return embyClient, nil
+	return embyClient
 }
 
 func (c *EmbyClient) embyHost() string {
@@ -131,9 +124,7 @@ func ParseRawJSON(resp *http.Response) (string, error) {
 }
 
 func (c *QbitClient) Get(endpoint string, params url.Values) (*http.Response, error) {
-	if err := c.login(); err != nil {
-		return nil, err
-	}
+	c.login()
 
 	fullUrl := c.host() + endpoint
 	if params != nil && len(params) > 0 {
@@ -158,9 +149,7 @@ func (c *QbitClient) Get(endpoint string, params url.Values) (*http.Response, er
 }
 
 func (c *QbitClient) Post(endpoint string, params url.Values) (*http.Response, error) {
-	if err := c.login(); err != nil {
-		return nil, err
-	}
+	c.login()
 
 	fullUrl := c.host() + endpoint
 	req, err := http.NewRequest(http.MethodPost, fullUrl, strings.NewReader(params.Encode()))
@@ -180,10 +169,10 @@ func (c *QbitClient) Post(endpoint string, params url.Values) (*http.Response, e
 	return resp, nil
 }
 
-func (c *QbitClient) login() error {
+func (c *QbitClient) login() {
 
 	if c.Headers["Cookie"] != "" {
-		return nil
+		return
 	}
 
 	body := url.Values{
@@ -193,21 +182,19 @@ func (c *QbitClient) login() error {
 
 	resp, err := c.Client.PostForm(c.host()+"/api/v2/auth/login", body)
 	if err != nil {
-		return err
+		panic(err)
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		return &QbitClientError{"login failed", "login", nil}
+		panic("login failed")
 	}
 
 	cookie, _, _ := strings.Cut(resp.Header.Get("Set-Cookie"), ";")
 	if cookie == "" {
-		return &QbitClientError{"login success, but cookie is empty", "login", nil}
+		panic("login success, but cookie is empty")
 	}
 
 	c.Headers["Cookie"] = cookie
-
-	return nil
 }
 
 type HTTPClientError struct {

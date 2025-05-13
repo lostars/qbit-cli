@@ -6,11 +6,7 @@ import (
 )
 
 func Items(params url.Values) (*api.EmbyItems, error) {
-	embyClient, err := api.GetEmbyClient()
-	if err != nil {
-		return nil, err
-	}
-
+	embyClient := api.GetEmbyClient()
 	resp, err := embyClient.Get(embyClient.EmbyUserEndpoint("Items"), params)
 	if err != nil {
 		return nil, err
@@ -23,11 +19,7 @@ func Items(params url.Values) (*api.EmbyItems, error) {
 }
 
 func Item(item string) (*api.EmbyItem, error) {
-	embyClient, err := api.GetEmbyClient()
-	if err != nil {
-		return nil, err
-	}
-
+	embyClient := api.GetEmbyClient()
 	resp, err := embyClient.Get(embyClient.EmbyUserEndpoint("Items", item), url.Values{})
 	if err != nil {
 		return nil, err

@@ -46,6 +46,13 @@ same as executable file named config.yaml
 	rootCmd.AddCommand(EmbyCmd())
 	rootCmd.AddCommand(JobCmd())
 
+	defer func() {
+		if r := recover(); r != nil {
+			fmt.Printf("%s\n", r)
+			os.Exit(1)
+		}
+	}()
+
 	if err := rootCmd.Execute(); err != nil {
 		os.Exit(1)
 	}

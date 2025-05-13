@@ -16,12 +16,7 @@ func RssAddSub(feedUrl string, path string) error {
 		"path": {path},
 	}
 
-	c, err := GetQbitClient()
-	if err != nil {
-		return err
-	}
-
-	resp, err := c.Post("/api/v2/rss/addFeed", params)
+	resp, err := GetQbitClient().Post("/api/v2/rss/addFeed", params)
 	if err != nil {
 		return err
 	}
@@ -35,12 +30,7 @@ func RssAddSub(feedUrl string, path string) error {
 }
 
 func RssRuleList() (map[string]*RssRule, error) {
-	c, err := GetQbitClient()
-	if err != nil {
-		return nil, err
-	}
-
-	resp, err := c.Get("/api/v2/rss/rules", url.Values{})
+	resp, err := GetQbitClient().Get("/api/v2/rss/rules", url.Values{})
 	if err != nil {
 		return nil, err
 	}
@@ -65,12 +55,7 @@ func RssSetRule(ruleName string, rule *RssRule) error {
 		"ruleDef": {string(j)},
 	}
 
-	c, err := GetQbitClient()
-	if err != nil {
-		return err
-	}
-
-	resp, er := c.Post("/api/v2/rss/setRule", params)
+	resp, er := GetQbitClient().Post("/api/v2/rss/setRule", params)
 	if er != nil {
 		return err
 	}
@@ -83,11 +68,7 @@ func RssSetRule(ruleName string, rule *RssRule) error {
 }
 
 func RssAllItems(withData bool) (map[string]RssSub, error) {
-	c, err := GetQbitClient()
-	if err != nil {
-		return nil, err
-	}
-	resp, err := c.Get("/api/v2/rss/items", url.Values{"withData": {strconv.FormatBool(withData)}})
+	resp, err := GetQbitClient().Get("/api/v2/rss/items", url.Values{"withData": {strconv.FormatBool(withData)}})
 	if err != nil {
 		return nil, err
 	}
@@ -101,11 +82,7 @@ func RssAllItems(withData bool) (map[string]RssSub, error) {
 }
 
 func RssRmSub(path string) error {
-	c, err := GetQbitClient()
-	if err != nil {
-		return err
-	}
-	resp, err := c.Post("/api/v2/rss/removeItem", url.Values{"path": {path}})
+	resp, err := GetQbitClient().Post("/api/v2/rss/removeItem", url.Values{"path": {path}})
 	if err != nil {
 		return err
 	}

@@ -37,10 +37,7 @@ Feed name is your keyword.
 			return errors.New("--indexer flag is required")
 		}
 
-		cfg, err := config.GetConfig()
-		if err != nil {
-			return err
-		}
+		cfg := config.GetConfig()
 		if cfg.Jackett.Host == "" || cfg.Jackett.ApiKey == "" {
 			return errors.New("jackett host or api key is empty")
 		}

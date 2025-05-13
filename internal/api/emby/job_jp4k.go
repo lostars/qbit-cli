@@ -149,15 +149,15 @@ func addTorrents(urls []string, autoTMM bool, category, tags, savePath string) e
 		"autoTMM": {strconv.FormatBool(autoTMM)},
 	}
 
-	cfg, _ := config.GetConfig()
+	cfg := config.GetConfig()
 	// load defaults from config file
-	if category == "" && cfg != nil {
+	if category == "" {
 		category = cfg.Torrent.DefaultSaveCategory
 	}
-	if tags == "" && cfg != nil {
+	if tags == "" {
 		tags = cfg.Torrent.DefaultSaveTags
 	}
-	if savePath == "" && cfg != nil {
+	if savePath == "" {
 		savePath = cfg.Torrent.DefaultSavePath
 	}
 

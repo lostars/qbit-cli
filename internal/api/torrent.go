@@ -10,12 +10,7 @@ import (
 // all the /torrent/* api here
 
 func TorrentList(params url.Values) ([]Torrent, error) {
-	client, err := GetQbitClient()
-	if err != nil {
-		return nil, err
-	}
-
-	resp, err := client.Get("/api/v2/torrents/info", params)
+	resp, err := GetQbitClient().Get("/api/v2/torrents/info", params)
 	if err != nil {
 		return nil, err
 	}
@@ -29,11 +24,7 @@ func TorrentList(params url.Values) ([]Torrent, error) {
 }
 
 func TorrentAdd(params url.Values) error {
-	client, err := GetQbitClient()
-	if err != nil {
-		return err
-	}
-	resp, err := client.Post("/api/v2/torrents/add", params)
+	resp, err := GetQbitClient().Post("/api/v2/torrents/add", params)
 	if err != nil {
 		return err
 	}
@@ -46,11 +37,7 @@ func TorrentAdd(params url.Values) error {
 }
 
 func TorrentFiles(params url.Values) ([]TorrentFile, error) {
-	client, err := GetQbitClient()
-	if err != nil {
-		return nil, err
-	}
-	resp, err := client.Get("/api/v2/torrents/files", params)
+	resp, err := GetQbitClient().Get("/api/v2/torrents/files", params)
 	if err != nil {
 		return nil, err
 	}
@@ -64,17 +51,12 @@ func TorrentFiles(params url.Values) ([]TorrentFile, error) {
 }
 
 func TorrentRenameFolder(hash string, old string, new string) error {
-	client, err := GetQbitClient()
-	if err != nil {
-		return err
-	}
-
 	params := url.Values{
 		"hash":    {hash},
 		"oldPath": {old},
 		"newPath": {new},
 	}
-	resp, err := client.Post("/api/v2/torrents/renameFolder", params)
+	resp, err := GetQbitClient().Post("/api/v2/torrents/renameFolder", params)
 	if err != nil {
 		return err
 	}
@@ -87,17 +69,12 @@ func TorrentRenameFolder(hash string, old string, new string) error {
 }
 
 func TorrentRenameFile(hash string, old string, new string) error {
-	client, err := GetQbitClient()
-	if err != nil {
-		return err
-	}
-
 	params := url.Values{
 		"hash":    {hash},
 		"oldPath": {old},
 		"newPath": {new},
 	}
-	resp, err := client.Post("/api/v2/torrents/renameFile", params)
+	resp, err := GetQbitClient().Post("/api/v2/torrents/renameFile", params)
 	if err != nil {
 		return err
 	}
@@ -110,16 +87,11 @@ func TorrentRenameFile(hash string, old string, new string) error {
 }
 
 func RenameTorrent(hash string, name string) error {
-	c, err := GetQbitClient()
-	if err != nil {
-		return err
-	}
-
 	params := url.Values{
 		"hash": {hash},
 		"name": {name},
 	}
-	resp, err := c.Post("/api/v2/torrents/rename", params)
+	resp, err := GetQbitClient().Post("/api/v2/torrents/rename", params)
 	if err != nil {
 		return err
 	}
@@ -133,13 +105,8 @@ func RenameTorrent(hash string, name string) error {
 	return nil
 }
 
-func TorrentUpdate(operation string, params url.Values) error {
-	c, err := GetQbitClient()
-	if err != nil {
-		return err
-	}
-
-	resp, err := c.Post("/api/v2/torrents/"+operation, params)
+func UpdateTorrent(operation string, params url.Values) error {
+	resp, err := GetQbitClient().Post("/api/v2/torrents/"+operation, params)
 	if err != nil {
 		return err
 	}

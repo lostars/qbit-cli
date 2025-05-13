@@ -42,11 +42,11 @@ func (r *RenameJP) RunCommand() *cobra.Command {
 	}
 
 	var (
-		filter, category, hashes, tag string
-		renameTorrent                 bool
+		state, category, hashes, tag string
+		renameTorrent                bool
 	)
 
-	jp.Flags().StringVar(&filter, "filter", "", `state filter:
+	jp.Flags().StringVar(&state, "filter", "", `state filter:
 all, downloading, seeding, completed, stopped, active, inactive, 
 running, stalled, stalled_uploading, stalled_downloading, errored`)
 	jp.Flags().StringVar(&category, "category", "", "category filter")
@@ -56,8 +56,8 @@ running, stalled, stalled_uploading, stalled_downloading, errored`)
 
 	jp.RunE = func(cmd *cobra.Command, args []string) error {
 		params := url.Values{}
-		if filter != "" {
-			params.Set("filter", filter)
+		if state != "" {
+			params.Set("filter", state)
 		}
 		if tag != "" {
 			params.Set("tag", tag)

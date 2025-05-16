@@ -37,6 +37,9 @@ func TruncateString(str string, start int, end int) string {
 }
 
 func PrintListWithCellConfig(headers []string, data *[][]string, cell tw.CellConfig) {
+	if data == nil || len(*data) <= 0 {
+		return
+	}
 	table := tablewriter.NewTable(os.Stdout,
 		tablewriter.WithConfig(tablewriter.Config{
 			Row: cell,

@@ -70,7 +70,7 @@ func LoadTorrentAddDefault(params url.Values) {
 		params.Set("category", cfg.Torrent.DefaultSaveCategory)
 	}
 	if params.Get("tags") == "" {
-		params.Set("tags", cfg.Torrent.DefaultSaveCategory)
+		params.Set("tags", cfg.Torrent.DefaultSaveTags)
 	}
 	if params.Get("savepath") == "" {
 		params.Set("savepath", cfg.Torrent.DefaultSavePath)

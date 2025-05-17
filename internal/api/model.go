@@ -66,3 +66,8 @@ type RssSub struct {
 	UID string `json:"uid"`
 	URL string `json:"url"`
 }
+
+type TorrentCategory struct {
+	Name     string `json:"name"`
+	SavePath string `json:"savePath"`
+}

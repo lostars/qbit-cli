@@ -1,6 +1,7 @@
 package api
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -172,5 +173,69 @@ func TagUpdate(operation string, name []string) error {
 		return err
 	}
 	defer resp.Body.Close()
+	return nil
+}
+
+func CategoryList() (*[]TorrentCategory, error) {
+	resp, err := GetQbitClient().Get("/api/v2/torrents/categories", url.Values{})
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	var categories map[string]TorrentCategory
+	if err := ParseJSON(resp, &categories); err != nil {
+		return nil, err
+	}
+	results := make([]TorrentCategory, 0, len(categories))
+	for _, category := range categories {
+		results = append(results, category)
+	}
+	return &results, nil
+}
+
+func CategoryAdd(name string, path string) error {
+	params := url.Values{}
+	params.Set("category", name)
+	params.Set("savePath", path)
+	resp, err := GetQbitClient().Post("/api/v2/torrents/createCategory", params)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode == http.StatusConflict {
+		return errors.New("category already exists")
+	}
+	if resp.StatusCode == http.StatusBadRequest {
+		return errors.New(resp.Status)
+	}
+	return nil
+}
+
+func CategoryDelete(names []string) error {
+	params := url.Values{}
+	params.Set("categories", strings.Join(names, "\n"))
+	resp, err := GetQbitClient().Post("/api/v2/torrents/removeCategories", params)
+	if err != nil {
+		return err
+	}
+	resp.Body.Close()
+	return nil
+}
+
+func CategoryUpdate(name string, path string) error {
+	params := url.Values{}
+	params.Set("category", name)
+	params.Set("savePath", path)
+	resp, err := GetQbitClient().Post("/api/v2/torrents/editCategory", params)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode == http.StatusConflict {
+		return errors.New("category not exists")
+	}
+	if resp.StatusCode == http.StatusBadRequest {
+		return errors.New(resp.Status)
+	}
 	return nil
 }

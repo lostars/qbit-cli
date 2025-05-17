@@ -11,8 +11,8 @@ type SearchDetail struct {
 	FileName   string `json:"fileName"`
 	FileSize   int64  `json:"fileSize"`
 	FileURL    string `json:"fileUrl"`
-	NBLeechers uint32 `json:"nbLeechers"`
-	NBSeeders  uint32 `json:"nbSeeders"`
+	NBLeechers int32  `json:"nbLeechers"`
+	NBSeeders  int32  `json:"nbSeeders"`
 	SiteUrl    string `json:"siteUrl"`
 }
 

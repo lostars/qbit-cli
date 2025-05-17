@@ -42,7 +42,11 @@ func (j *JP4K) RunCommand() *cobra.Command {
 		plugins                          string
 		saveCategory, savePath, saveTags string
 		autoMM                           bool
+		premiereBefore, premiereAfter    string
 	)
+
+	cmd.Flags().StringVar(&premiereBefore, "premiere-before", "", "movie premiere before, ISO format")
+	cmd.Flags().StringVar(&premiereAfter, "premiere-after", "", "movie premiere after, ISO format")
 
 	cmd.Flags().StringVar(&plugins, "plugins", "enabled", "which plugin to use, comma separated list of plugin names")
 	cmd.Flags().BoolVar(&autoMM, "auto-management", true, "whether enable torrent auto management")
@@ -52,8 +56,17 @@ func (j *JP4K) RunCommand() *cobra.Command {
 	cmd.Flags().StringVar(&saveTags, "save-tags", "", "torrent save tags")
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
+		searchParams := url.Values{}
+		searchParams.Add("Recursive", "true")
+		searchParams.Add("MaxWidth", strconv.Itoa(3000))
+		if premiereBefore != "" {
+			searchParams.Add("MaxPremiereDate", premiereBefore)
+		}
+		if premiereAfter != "" {
+			searchParams.Add("MinPremiereDate", premiereAfter)
+		}
 
-		items := fourKItems()
+		items := fourKItems(searchParams)
 		if items == nil || len(items) <= 0 {
 			fmt.Println("no 4k items found")
 			return nil
@@ -113,7 +126,7 @@ func (j *JP4K) RunCommand() *cobra.Command {
 	return cmd
 }
 
-func fourKItems() []*api.EmbyItem {
+func fourKItems(searchParams url.Values) []*api.EmbyItem {
 	// search 4k tag first
 	tagParams := url.Values{
 		"SearchTerm":       {"4k"},
@@ -125,13 +138,9 @@ func fourKItems() []*api.EmbyItem {
 		return nil
 	}
 	tag := tags.Items[0].ID
+	searchParams.Add("GenreIds", tag)
 
-	params := url.Values{}
-	params.Add("Recursive", "true")
-	params.Add("GenreIds", tag)
-	params.Add("MaxWidth", strconv.Itoa(3000))
-
-	items, err := Items(params)
+	items, err := Items(searchParams)
 	if err != nil {
 		return nil
 	}

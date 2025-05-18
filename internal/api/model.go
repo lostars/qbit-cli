@@ -1,5 +1,7 @@
 package api
 
+import "fmt"
+
 type SearchResults struct {
 	Results []SearchDetail `json:"results"`
 	Status  string         `json:"status"`
@@ -70,4 +72,23 @@ type RssSub struct {
 type TorrentCategory struct {
 	Name     string `json:"name"`
 	SavePath string `json:"savePath"`
+}
+
+type QbitServerInfo struct {
+	WebApiVersion     string
+	AppVersion        string
+	QtVersion         string `json:"qt"`
+	LibTorrentVersion string `json:"libtorrent"`
+	BoostVersion      string `json:"boost"`
+	OpenSSLVersion    string `json:"openssl"`
+	Bitness           int32  `json:"bitness"`
+	Platform          string `json:"platform"`
+	ZlibVersion       string `json:"zlib"`
+}
+
+func (info QbitServerInfo) String() string {
+	return fmt.Sprintf("platform: %s\nwebapi: %s\napp: %s\nqt: %s\n"+
+		"zlib: %s\nlibtorrent: %s\nboost: %s\nopenssl: %s\nbitness: %d",
+		info.Platform, info.WebApiVersion, info.AppVersion, info.QtVersion, info.ZlibVersion, info.LibTorrentVersion,
+		info.BoostVersion, info.OpenSSLVersion, info.Bitness)
 }

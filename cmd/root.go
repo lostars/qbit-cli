@@ -39,6 +39,7 @@ same as executable file named config.yaml
 		return nil
 	}
 
+	rootCmd.AddCommand(AppCmd())
 	rootCmd.AddCommand(TorrentCmd())
 	rootCmd.AddCommand(RssCmd())
 	rootCmd.AddCommand(PluginCmd())

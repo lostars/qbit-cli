@@ -121,6 +121,14 @@ func ParseJSON(resp *http.Response, v any) error {
 	return nil
 }
 
+func ParseString(resp *http.Response) (string, error) {
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return "", err
+	}
+	return string(body), nil
+}
+
 func ParseRawJSON(resp *http.Response) (string, error) {
 	raw := json.RawMessage{}
 	err := json.NewDecoder(resp.Body).Decode(&raw)

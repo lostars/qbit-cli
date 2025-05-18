@@ -26,10 +26,12 @@ func TorrentUpdate() *cobra.Command {
 		category, tags, torrentLocation, removeTags              string
 		autoManage, forceStart, superSeeding, sequentialDownload bool
 		firstOrLastPieceFirst                                    bool
+		stopSeeding                                              bool
 	)
 
 	cmd.Flags().BoolVar(&all, "all", false, "update all torrents")
 
+	cmd.Flags().BoolVar(&stopSeeding, "stop-seeding", false, "stop all seeding torrents(can't work with other flags)")
 	cmd.Flags().BoolVar(&stop, "stop", false, "stop torrent")
 	cmd.Flags().BoolVar(&start, "start", false, "start torrent")
 	cmd.Flags().BoolVar(&recheck, "recheck", false, "recheck torrent")
@@ -57,6 +59,11 @@ func TorrentUpdate() *cobra.Command {
 	cmd.Flags().BoolVar(&firstOrLastPieceFirst, "first-last-first", false, "first or last piece first")
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
+		if stopSeeding {
+			stopSeedingTorrents()
+			return nil
+		}
+
 		hashes := strings.Join(args, "|")
 		if all {
 			hashes = "all"
@@ -150,4 +157,19 @@ func update(operation string, params url.Values) {
 	} else {
 		fmt.Println("done.")
 	}
+}
+
+func stopSeedingTorrents() {
+	searchParams := url.Values{}
+	searchParams.Set("filter", "seeding")
+	torrents, err := api.TorrentList(searchParams)
+	if err != nil {
+		fmt.Printf("stop seeding error: %s\n", err)
+		return
+	}
+	var hashes = make([]string, 0, len(torrents))
+	for _, torrent := range torrents {
+		hashes = append(hashes, torrent.Hash)
+	}
+	update("stop", url.Values{"hashes": []string{strings.Join(hashes, "|")}})
 }

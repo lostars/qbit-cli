@@ -77,6 +77,10 @@ const (
 	BYTE string = "B"
 )
 
+func FormatPercent(decimal float64) string {
+	return strconv.FormatInt(int64(decimal*100), 10) + "%"
+}
+
 func FormatFileSizeAuto(bytes uint64, decimal int) string {
 	if bytes < 1024 {
 		return strconv.FormatUint(bytes, 10) + BYTE

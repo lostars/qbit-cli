@@ -37,8 +37,7 @@ func TorrentFiles() *cobra.Command {
 		headers := []string{"name", "priority", "progress"}
 		var data = make([][]string, len(torrentFiles))
 		for i, f := range torrentFiles {
-			p := strconv.FormatInt((int64)(f.Progress*100), 10) + "%"
-			data[i] = []string{f.Name, strconv.Itoa(int(f.Priority)), p}
+			data[i] = []string{f.Name, strconv.Itoa(int(f.Priority)), utils.FormatPercent(f.Progress)}
 		}
 		utils.PrintList(headers, &data)
 

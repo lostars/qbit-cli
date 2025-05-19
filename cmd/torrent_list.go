@@ -65,7 +65,7 @@ stalled, stalled_uploading, stalled_downloading, errored`)
 		headers := []string{"name", "hash", "category", "tags", "state", "progress"}
 		var data = make([][]string, len(torrentList))
 		for i, t := range torrentList {
-			data[i] = []string{t.Name, t.Hash, t.Category, t.Tags, t.State, strconv.FormatUint(uint64(t.Progress), 10)}
+			data[i] = []string{t.Name, t.Hash, t.Category, t.Tags, t.State, strconv.FormatFloat(t.Progress, 'f', 2, 64)}
 		}
 		utils.PrintList(headers, &data)
 		return nil

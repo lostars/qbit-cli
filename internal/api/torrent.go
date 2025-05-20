@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"strconv"
 	"strings"
 )
 
@@ -236,6 +237,28 @@ func CategoryUpdate(name string, path string) error {
 	}
 	if resp.StatusCode == http.StatusBadRequest {
 		return errors.New(resp.Status)
+	}
+	return nil
+}
+
+func SetTorrentFilePriority(hash, ids string, priority int) error {
+	params := url.Values{}
+	params.Set("hash", hash)
+	params.Set("id", ids)
+	params.Set("priority", strconv.FormatInt(int64(priority), 10))
+	resp, err := GetQbitClient().Post("/api/v2/torrents/filePrio", params)
+	if err != nil {
+		return err
+	}
+	resp.Body.Close()
+	if resp.StatusCode == http.StatusConflict {
+		return errors.New("torrent metadata hasn't downloaded yet or at least one file id was not found")
+	}
+	if resp.StatusCode == http.StatusBadRequest {
+		return errors.New("priority is invalid or at least one file id is not a valid integer")
+	}
+	if resp.StatusCode == http.StatusNotFound {
+		return errors.New("torrent hash was not found")
 	}
 	return nil
 }

@@ -24,21 +24,7 @@ func AppInfo() *cobra.Command {
 	}
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
-		info, err := api.QbitAppBuildInfo()
-		if err != nil {
-			return err
-		}
-		appVersion, e := api.QbitAppVersion()
-		if e != nil {
-			return e
-		}
-		apiVersion, er := api.QbitApiVersion()
-		if er != nil {
-			return er
-		}
-		info.AppVersion = appVersion
-		info.WebApiVersion = apiVersion
-		fmt.Println(info)
+		fmt.Println(api.GetQbitServerInfo())
 		return nil
 	}
 

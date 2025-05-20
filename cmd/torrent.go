@@ -24,6 +24,7 @@ func TorrentCmd() *cobra.Command {
 	torrentCmd.AddCommand(DeleteTorrents())
 	torrentCmd.AddCommand(TagCmd())
 	torrentCmd.AddCommand(TorrentCategoryCmd())
+	torrentCmd.AddCommand(TorrentFilePriority())
 
 	return torrentCmd
 }
@@ -83,4 +84,39 @@ func RenameTorrentCmd() *cobra.Command {
 	}
 
 	return torrentCmd
+}
+
+func TorrentFilePriority() *cobra.Command {
+	var cmd = &cobra.Command{
+		Use:   "fp <hash>",
+		Short: "Set torrent file priority",
+		Args: func(cmd *cobra.Command, args []string) error {
+			if len(args) != 1 {
+				return errors.New("torrent hash is required")
+			}
+			return nil
+		},
+	}
+	var index string
+	var priority int
+
+	cmd.Flags().StringVar(&index, "index", "", "index of torrent file, separated by |")
+	cmd.Flags().IntVar(&priority, "priority", 0, `priority of torrent file:
+0	Do not download
+1	Normal priority
+6	High priority
+7	Maximal priority`)
+
+	cmd.RunE = func(cmd *cobra.Command, args []string) error {
+		if index == "" {
+			return errors.New("torrent file index is required")
+		}
+		err := api.SetTorrentFilePriority(args[0], index, priority)
+		if err != nil {
+			return err
+		}
+		return nil
+	}
+
+	return cmd
 }

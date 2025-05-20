@@ -22,6 +22,30 @@ type QbitClient struct {
 	Headers  map[string]string
 }
 
+var serverInfo *QbitServerInfo
+
+func GetQbitServerInfo() *QbitServerInfo {
+	if serverInfo != nil {
+		return serverInfo
+	}
+	info, err := QbitAppBuildInfo()
+	if err != nil {
+		panic(err)
+	}
+	appVersion, e := QbitAppVersion()
+	if e != nil {
+		panic(e)
+	}
+	apiVersion, er := QbitApiVersion()
+	if er != nil {
+		panic(er)
+	}
+	info.AppVersion = appVersion
+	info.WebApiVersion = apiVersion
+	serverInfo = info
+	return serverInfo
+}
+
 var client *QbitClient
 
 func GetQbitClient() *QbitClient {

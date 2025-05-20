@@ -90,6 +90,8 @@ func TorrentFilePriority() *cobra.Command {
 	var cmd = &cobra.Command{
 		Use:   "fp <hash>",
 		Short: "Set torrent file priority",
+		Long: `Make sure your qBittorrent webapi version is >= 2.8.2
+This command use file index which is return by torrent files from webapi 2.8.2`,
 		Args: func(cmd *cobra.Command, args []string) error {
 			if len(args) != 1 {
 				return errors.New("torrent hash is required")

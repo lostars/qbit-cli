@@ -35,6 +35,8 @@ type TorrentFile struct {
 	Name     string  `json:"name"`
 	Priority uint8   `json:"priority"`
 	Progress float64 `json:"progress"`
+	Index    int32   `json:"index"`
+	Size     int64   `json:"size"`
 }
 
 type RssRule struct {

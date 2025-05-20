@@ -160,12 +160,15 @@ func addTorrents(urls []string, autoTMM bool, category, tags, savePath string) e
 	// load defaults from config file
 	if category == "" {
 		category = cfg.Torrent.DefaultSaveCategory
+		params.Add("category", category)
 	}
 	if tags == "" {
 		tags = cfg.Torrent.DefaultSaveTags
+		params.Add("tags", tags)
 	}
 	if savePath == "" {
 		savePath = cfg.Torrent.DefaultSavePath
+		params.Add("savepath", savePath)
 	}
 
 	if err := api.TorrentAdd(urls, params); err != nil {

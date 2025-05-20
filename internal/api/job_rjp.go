@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
+	"time"
 )
 
 type RenameJP struct{}
@@ -110,13 +111,18 @@ running, stalled, stalled_uploading, stalled_downloading, errored`)
 					}
 					rename(renameTorrent, t, newFolder)
 					// rename only when name changed
+					sleep := false
 					if newFolder != files[0] {
+						sleep = true
 						if err := TorrentRenameFolder(t.Hash, files[0], newFolder); err != nil {
 							fmt.Printf("[%s] %s -> %s renameFolder failed\n", t.Hash, files[0], newFolder)
 						}
 					}
 					newPath := newFolder + "/" + parseJPName(files[1], files[0]) + filepath.Ext(files[1])
 					if newPath != file.Name {
+						if sleep {
+							time.Sleep(500 * time.Millisecond)
+						}
 						if err := TorrentRenameFile(t.Hash, file.Name, newPath); err != nil {
 							fmt.Printf("[%s] %s -> %s renameFile failed\n", t.Hash, file.Name, newPath)
 						}

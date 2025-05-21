@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/spf13/cobra"
@@ -48,11 +49,11 @@ func SubAdd() *cobra.Command {
 		}
 
 		var rssRule *api.RssRule
-		ruleMap, err := api.RssRuleList()
-		if err != nil {
-			return err
-		}
 		if rule != "" {
+			ruleMap, err := api.RssRuleList()
+			if err != nil {
+				return err
+			}
 			if r := ruleMap[rule]; r != nil {
 				r.AffectedFeeds = append(r.AffectedFeeds, url)
 				rssRule = r
@@ -72,17 +73,19 @@ func SubAdd() *cobra.Command {
 func SubList() *cobra.Command {
 	var cmd = &cobra.Command{
 		Use:   "list",
-		Short: "Manage subscription",
+		Short: "Display subscription in formated json",
 	}
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
-		results, err := api.RssAllItems(false)
+		results, err := api.RssAllItems(true)
 		if err != nil {
 			return err
 		}
-		for k, v := range results {
-			fmt.Printf("[%s]:[%s]\n", k, v.URL)
+		str, err := json.MarshalIndent(results, "", "  ")
+		if err != nil {
+			return err
 		}
+		fmt.Println(string(str))
 		return nil
 	}
 

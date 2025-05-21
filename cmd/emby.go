@@ -103,7 +103,11 @@ You may find all types here: https://dev.emby.media/doc/restapi/Item-Types.html`
 		headers := []string{"ID", "Name", "Type", "PremiereDate"}
 		var data = make([][]string, len(items.Items))
 		for i, item := range items.Items {
-			data[i] = []string{item.ID, item.Name, item.Type, item.PremiereDate.Format("2006-01-02")}
+			year := ""
+			if !item.PremiereDate.IsZero() {
+				year = item.PremiereDate.Format("2006-01-02")
+			}
+			data[i] = []string{item.ID, item.Name, item.Type, year}
 		}
 		utils.PrintListWithColWidth(headers, &data, map[int]int{1: 50}, false)
 
@@ -159,7 +163,11 @@ func ItemInfo() *cobra.Command {
 
 		header := []string{"ID", "Name", "Type", "Video", "FileCount", "FileSize", "PremiereDate"}
 		var data = make([][]string, 1)
-		data[0] = []string{item.ID, item.Name, item.Type, video, sourceStr, size, item.PremiereDate.Format("2006-01-02")}
+		year := ""
+		if !item.PremiereDate.IsZero() {
+			year = item.PremiereDate.Format("2006-01-02")
+		}
+		data[0] = []string{item.ID, item.Name, item.Type, video, sourceStr, size, year}
 		utils.PrintListWithColWidth(header, &data, map[int]int{1: 50}, false)
 
 		if showSourceList {

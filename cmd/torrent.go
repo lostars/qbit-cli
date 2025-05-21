@@ -5,6 +5,7 @@ import (
 	"github.com/spf13/cobra"
 	"net/url"
 	"qbit-cli/internal/api"
+	"qbit-cli/pkg/utils"
 	"strconv"
 	"strings"
 )
@@ -25,6 +26,7 @@ func TorrentCmd() *cobra.Command {
 	torrentCmd.AddCommand(TagCmd())
 	torrentCmd.AddCommand(TorrentCategoryCmd())
 	torrentCmd.AddCommand(TorrentFilePriority())
+	torrentCmd.AddCommand(TorrentTracker())
 
 	return torrentCmd
 }
@@ -117,6 +119,52 @@ This command use file index which is return by torrent files from webapi 2.8.2`,
 		if err != nil {
 			return err
 		}
+		return nil
+	}
+
+	return cmd
+}
+
+func TorrentTracker() *cobra.Command {
+	var cmd = &cobra.Command{
+		Use:   "tracker <hash>",
+		Short: "List torrent trackers",
+		Args: func(cmd *cobra.Command, args []string) error {
+			if len(args) != 1 {
+				return errors.New("torrent hash is required")
+			}
+			return nil
+		},
+	}
+
+	var status int
+	cmd.Flags().IntVar(&status, "status", -1, `status of tracker:
+0	Tracker is disabled (used for DHT, PeX, and LSD)
+1	Tracker has not been contacted yet
+2	Tracker has been contacted and is working
+3	Tracker is updating
+4	Tracker has been contacted, but it is not working (or doesn't send proper replies)
+`)
+
+	cmd.RunE = func(cmd *cobra.Command, args []string) error {
+		trackers, err := api.TorrentTrackers(args[0])
+		if err != nil {
+			return err
+		}
+		header := []string{"url", "status", "tier", "peers", "seeds", "leeches", "downloaded", "msg"}
+		var data = make([][]string, 0, len(*trackers))
+		for _, t := range *trackers {
+			if status >= 0 {
+				if status == t.Status {
+					data = append(data, []string{t.URL, strconv.Itoa(t.Status), strconv.Itoa(t.Tier), strconv.Itoa(t.NumPeers),
+						strconv.Itoa(t.NumSeeds), strconv.Itoa(t.NumLeeches), strconv.Itoa(t.NumDownloaded), t.Msg})
+				}
+			} else {
+				data = append(data, []string{t.URL, strconv.Itoa(t.Status), strconv.Itoa(t.Tier), strconv.Itoa(t.NumPeers),
+					strconv.Itoa(t.NumSeeds), strconv.Itoa(t.NumLeeches), strconv.Itoa(t.NumDownloaded), t.Msg})
+			}
+		}
+		utils.PrintList(header, &data)
 		return nil
 	}
 

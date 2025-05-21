@@ -262,3 +262,16 @@ func SetTorrentFilePriority(hash, ids string, priority int) error {
 	}
 	return nil
 }
+
+func TorrentTrackers(hash string) (*[]TorrentTracker, error) {
+	resp, err := GetQbitClient().Get("/api/v2/torrents/trackers", url.Values{"hash": {hash}})
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	var trackers []TorrentTracker
+	if err := ParseJSON(resp, &trackers); err != nil {
+		return nil, err
+	}
+	return &trackers, nil
+}

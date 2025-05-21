@@ -94,3 +94,14 @@ func (info QbitServerInfo) String() string {
 		info.Platform, info.WebApiVersion, info.AppVersion, info.QtVersion, info.ZlibVersion, info.LibTorrentVersion,
 		info.BoostVersion, info.OpenSSLVersion, info.Bitness)
 }
+
+type TorrentTracker struct {
+	URL           string `json:"url"`
+	Status        int    `json:"status"`
+	Tier          int    `json:"tier"`
+	NumPeers      int    `json:"num_peers"`
+	NumSeeds      int    `json:"num_seeds"`
+	NumLeeches    int    `json:"num_leeches"`
+	NumDownloaded int    `json:"num_downloaded"`
+	Msg           string `json:"msg"`
+}

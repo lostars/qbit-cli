@@ -56,10 +56,17 @@ You can use `qbit -h` `qbit [command] -h` for details.
 
 ### torrent
 ```
-list    # torrent list
-add     # add torrents
-files   # list torrent files
-search  # search torrents through qBittorrent plugins and automatically download
+Available Commands:
+  add         Add one or more torrent
+  category    Manage torrent category
+  delete      Delete torrents
+  files       List torrent files by torrent hash
+  fp          Set torrent file priority
+  list        List torrents
+  rename      Rename a torrent
+  search      Search torrents through qBittorrent plugins
+  tag         Tag management
+  update      A bulk of torrent operations, support multiple or all torrents.
 ```
 
 **search**
@@ -69,8 +76,9 @@ You can use `--auto-download=true` `--torrent-regex=batman` to download torrents
 ### rss
 
 ```
-rule    # rule -h for details
-sub     # sub -h for details
+Available Commands:
+  rule        Manage RSS rules
+  sub         Manage subscriptions
 ```
 
 ### job
@@ -78,24 +86,40 @@ sub     # sub -h for details
 `job [job] -h` for details.
 
 ```
-list      # job list
-run       # run job by name
+Available Commands:
+  list        Job list
+  run         Run job
 ```
 
 ### plugin
 
 ```
-list    # plugin list
+Available Commands:
+  enable      Manage plugin status
+  install     Install plugins
+  list        List all plugins
+  uninstall   Uninstall plugins. API seems not working...
+  update      Update all plugins
 ```
 
 ### jackett
 
 ```
-feed    # add jackett feed to qBittorrent
+Available Commands:
+  item        Item management
 ```
 
 ### emby
 
 ```
-item    # item management `item -h` for more information
+Available Commands:
+  item        Item management
+```
+
+### app
+```
+Available Commands:
+  info        Show app info
+  p           Show app preferences in formated json(if not filter set)
+  sp          Update app preferences
 ```

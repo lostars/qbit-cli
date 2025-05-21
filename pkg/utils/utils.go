@@ -44,6 +44,23 @@ func PrintList(headers []string, data *[][]string) {
 	}, true)
 }
 
+func PrintListWithColWidth(headers []string, data *[][]string, widthMap map[int]int, warp bool) {
+	PrintListWithStyleFunc(headers, data, func(row, col int) lipgloss.Style {
+		if row == table.HeaderRow {
+			return DefaultHeaderStyle()
+		}
+		for c, width := range widthMap {
+			if col == c {
+				// TODO truncate string with ... tail is invalid when margin enabled
+				// https://github.com/charmbracelet/lipgloss/issues/493
+				//return DefaultCellStyle().Width(width)
+				return lipgloss.NewStyle().Width(width)
+			}
+		}
+		return DefaultCellStyle()
+	}, warp)
+}
+
 func PrintListWithStyleFunc(headers []string, data *[][]string, styleFunc table.StyleFunc, wrap bool) {
 	t := table.New().
 		Border(lipgloss.ASCIIBorder()).

@@ -2,8 +2,6 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/charmbracelet/lipgloss"
-	"github.com/charmbracelet/lipgloss/table"
 	"github.com/spf13/cobra"
 	"qbit-cli/internal/api"
 	"qbit-cli/pkg/utils"
@@ -44,15 +42,7 @@ func JobList() *cobra.Command {
 			data = append(data, []string{v.JobName(), fmt.Sprintf("%v", tags), description})
 		}
 
-		utils.PrintListWithStyleFunc(header, &data, func(row, col int) lipgloss.Style {
-			if row == table.HeaderRow {
-				return utils.DefaultHeaderStyle()
-			}
-			if col == 2 {
-				return utils.DefaultCellStyle().Width(50)
-			}
-			return utils.DefaultCellStyle()
-		}, true)
+		utils.PrintListWithColWidth(header, &data, map[int]int{2: 50}, true)
 
 		return nil
 	}

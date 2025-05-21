@@ -2,8 +2,6 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/charmbracelet/lipgloss"
-	"github.com/charmbracelet/lipgloss/table"
 	"github.com/spf13/cobra"
 	"net/url"
 	"qbit-cli/internal/api"
@@ -69,15 +67,7 @@ stalled, stalled_uploading, stalled_downloading, errored`)
 		for i, t := range torrentList {
 			data[i] = []string{t.Name, t.Hash, t.Category, t.Tags, t.State, utils.FormatPercent(t.Progress)}
 		}
-		utils.PrintListWithStyleFunc(headers, &data, func(row, col int) lipgloss.Style {
-			if row == table.HeaderRow {
-				return utils.DefaultHeaderStyle()
-			}
-			if col == 0 {
-				return utils.DefaultCellStyle().Width(30)
-			}
-			return utils.DefaultCellStyle()
-		}, false)
+		utils.PrintListWithColWidth(headers, &data, map[int]int{0: 30}, false)
 		return nil
 	}
 

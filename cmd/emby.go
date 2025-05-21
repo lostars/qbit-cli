@@ -104,7 +104,7 @@ You may find all types here: https://dev.emby.media/doc/restapi/Item-Types.html`
 		for i, item := range items.Items {
 			data[i] = []string{item.ID, item.Name, item.Type}
 		}
-		utils.PrintList(headers, &data)
+		utils.PrintListWithColWidth(headers, &data, map[int]int{1: 50}, false)
 
 		return nil
 	}
@@ -159,7 +159,7 @@ func ItemInfo() *cobra.Command {
 		header := []string{"ID", "Name", "Type", "Video", "FileCount", "FileSize"}
 		var data = make([][]string, 1)
 		data[0] = []string{item.ID, item.Name, item.Type, video, sourceStr, size}
-		utils.PrintList(header, &data)
+		utils.PrintListWithColWidth(header, &data, map[int]int{1: 50}, false)
 
 		if showSourceList {
 			showSources(&item.MediaSources)

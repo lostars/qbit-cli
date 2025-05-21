@@ -2,6 +2,7 @@ package api
 
 import (
 	"qbit-cli/pkg/utils"
+	"time"
 )
 
 type EmbyItems struct {
@@ -10,10 +11,12 @@ type EmbyItems struct {
 }
 
 type EmbyItem struct {
-	ID           string            `json:"Id"`
-	Name         string            `json:"Name"`
-	Type         string            `json:"Type"`
-	MediaSources []EmbyMediaSource `json:"MediaSources"`
+	ID             string            `json:"Id"`
+	Name           string            `json:"Name"`
+	Type           string            `json:"Type"`
+	ProductionYear int               `json:"ProductionYear"`
+	PremiereDate   time.Time         `json:"PremiereDate"`
+	MediaSources   []EmbyMediaSource `json:"MediaSources"`
 }
 
 type EmbyMediaSource struct {

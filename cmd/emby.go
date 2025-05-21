@@ -64,7 +64,8 @@ You may find all types here: https://dev.emby.media/doc/restapi/Item-Types.html`
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		params := url.Values{
-			"Limit": []string{strconv.FormatInt(int64(limit), 10)},
+			"Limit":  []string{strconv.FormatInt(int64(limit), 10)},
+			"Fields": []string{"PremiereDate", "ProductionYear"},
 		}
 		if includeItemTypes != "" {
 			params.Add("Recursive", "true")
@@ -99,10 +100,10 @@ You may find all types here: https://dev.emby.media/doc/restapi/Item-Types.html`
 		}
 
 		fmt.Printf("total items: %d\n", items.TotalRecordCount)
-		headers := []string{"ID", "Name", "Type"}
+		headers := []string{"ID", "Name", "Type", "PremiereDate"}
 		var data = make([][]string, len(items.Items))
 		for i, item := range items.Items {
-			data[i] = []string{item.ID, item.Name, item.Type}
+			data[i] = []string{item.ID, item.Name, item.Type, item.PremiereDate.Format("2006-01-02")}
 		}
 		utils.PrintListWithColWidth(headers, &data, map[int]int{1: 50}, false)
 
@@ -156,9 +157,9 @@ func ItemInfo() *cobra.Command {
 			size = fmt.Sprintf("%v", s)
 		}
 
-		header := []string{"ID", "Name", "Type", "Video", "FileCount", "FileSize"}
+		header := []string{"ID", "Name", "Type", "Video", "FileCount", "FileSize", "PremiereDate"}
 		var data = make([][]string, 1)
-		data[0] = []string{item.ID, item.Name, item.Type, video, sourceStr, size}
+		data[0] = []string{item.ID, item.Name, item.Type, video, sourceStr, size, item.PremiereDate.Format("2006-01-02")}
 		utils.PrintListWithColWidth(header, &data, map[int]int{1: 50}, false)
 
 		if showSourceList {

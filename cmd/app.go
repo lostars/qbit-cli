@@ -41,7 +41,7 @@ func AppInfo() *cobra.Command {
 func AppPreference() *cobra.Command {
 	var cmd = &cobra.Command{
 		Use:   "p",
-		Short: "Show app preferences in formated json",
+		Short: "Show app preferences in formated json(if not filter set)",
 		Long: `Most preferences is key-value format except "scan_dirs":
 {
     "/home/user/Downloads/incoming/games": 0,
@@ -50,18 +50,41 @@ func AppPreference() *cobra.Command {
 So take care when you want to modify this preference.`,
 	}
 
+	var filter string
+	cmd.Flags().StringVar(&filter, "filter", "", "filter to search preferences")
+
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		d, err := api.QbitAppPreference()
 		if err != nil {
 			return err
 		}
 
-		var prettyJSON bytes.Buffer
-		err = json.Indent(&prettyJSON, []byte(d), "", "    ")
-		if err != nil {
-			return err
+		if filter != "" {
+			var data map[string]interface{}
+			err = json.Unmarshal([]byte(d), &data)
+			if err != nil {
+				return err
+			}
+			for k, v := range data {
+				if strings.Contains(k, filter) {
+					switch val := v.(type) {
+					default:
+						fmt.Printf("%s: %v\n", k, val)
+					case int, int32, int64:
+						fmt.Printf("%s: %d\n", k, val)
+					case float32, float64:
+						fmt.Printf("%s: %.0f\n", k, val)
+					}
+				}
+			}
+		} else {
+			var prettyJSON bytes.Buffer
+			err = json.Indent(&prettyJSON, []byte(d), "", "    ")
+			if err != nil {
+				return err
+			}
+			fmt.Println(prettyJSON.String())
 		}
-		fmt.Println(prettyJSON.String())
 
 		return nil
 	}

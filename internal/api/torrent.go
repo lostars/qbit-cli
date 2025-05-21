@@ -275,3 +275,22 @@ func TorrentTrackers(hash string) (*[]TorrentTracker, error) {
 	}
 	return &trackers, nil
 }
+
+func TorrentPeers(hash string) (*[]TorrentPeer, error) {
+	params := url.Values{}
+	params.Set("hash", hash)
+	resp, err := GetQbitClient().Get("/api/v2/sync/torrentPeers", params)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	var result PeerResult
+	if err := ParseJSON(resp, &result); err != nil {
+		return nil, err
+	}
+	var peers = make([]TorrentPeer, 0, len(result.Peers))
+	for _, peer := range result.Peers {
+		peers = append(peers, peer)
+	}
+	return &peers, nil
+}

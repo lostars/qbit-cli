@@ -105,3 +105,30 @@ type TorrentTracker struct {
 	NumDownloaded int    `json:"num_downloaded"`
 	Msg           string `json:"msg"`
 }
+
+type TorrentPeer struct {
+	IP           string  `json:"ip"`
+	Port         int     `json:"port"`
+	Client       string  `json:"client"`
+	Connection   string  `json:"connection"`
+	Country      string  `json:"country"`
+	CountryCode  string  `json:"country_code"`
+	DLSpeed      int64   `json:"dl_speed"`
+	Downloaded   int64   `json:"downloaded"`
+	Files        string  `json:"files"`
+	Flags        string  `json:"flags"`
+	FlagsDesc    string  `json:"flags_desc"`
+	PeerIDClient string  `json:"peer_id_client"`
+	Progress     float64 `json:"progress"`
+	Relevance    float64 `json:"relevance"`
+	Shadowbanned bool    `json:"shadowbanned"`
+	UpSpeed      int64   `json:"up_speed"`
+	Uploaded     int64   `json:"uploaded"`
+}
+
+type PeerResult struct {
+	Peers      map[string]TorrentPeer `json:"peers"`
+	FullUpdate bool                   `json:"full_update"`
+	Rid        int64                  `json:"rid"`
+	ShowFlags  bool                   `json:"show_flags"`
+}

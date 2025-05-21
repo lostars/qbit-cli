@@ -27,6 +27,7 @@ func TorrentCmd() *cobra.Command {
 	torrentCmd.AddCommand(TorrentCategoryCmd())
 	torrentCmd.AddCommand(TorrentFilePriority())
 	torrentCmd.AddCommand(TorrentTracker())
+	torrentCmd.AddCommand(TorrentPeer())
 
 	return torrentCmd
 }
@@ -165,6 +166,39 @@ func TorrentTracker() *cobra.Command {
 			}
 		}
 		utils.PrintList(header, &data)
+		return nil
+	}
+
+	return cmd
+}
+
+func TorrentPeer() *cobra.Command {
+	var cmd = &cobra.Command{
+		Use:   "peer <hash>",
+		Short: "Get torrent peers",
+		Args: func(cmd *cobra.Command, args []string) error {
+			if len(args) < 1 {
+				return errors.New("torrent hash is required")
+			}
+			return nil
+		},
+	}
+	cmd.RunE = func(cmd *cobra.Command, args []string) error {
+
+		peers, err := api.TorrentPeers(args[0])
+		if err != nil {
+			return err
+		}
+
+		header := []string{"area", "host", "conn", "flags", "client", "PROG", "DLS", "UPS", "DL", "UL", "REL", "files"}
+		var data = make([][]string, 0, len(*peers))
+		for _, t := range *peers {
+			data = append(data, []string{t.CountryCode, t.IP + ":" + strconv.Itoa(t.Port), t.Connection, t.Flags, t.Client,
+				utils.FormatPercent(t.Progress), utils.FormatFileSizeAuto(uint64(t.DLSpeed), 0) + "/s",
+				utils.FormatFileSizeAuto(uint64(t.UpSpeed), 0) + "/S", utils.FormatFileSizeAuto(uint64(t.Downloaded), 0),
+				utils.FormatFileSizeAuto(uint64(t.Uploaded), 0), utils.FormatPercent(t.Relevance), t.Files})
+		}
+		utils.PrintListWithColWidth(header, &data, map[int]int{1: 20, 4: 10}, true)
 		return nil
 	}
 

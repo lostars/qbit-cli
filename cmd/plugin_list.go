@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/olekukonko/tablewriter/tw"
 	"github.com/spf13/cobra"
 	"qbit-cli/internal/api"
 	"qbit-cli/pkg/utils"
@@ -66,14 +65,7 @@ func PluginList() *cobra.Command {
 			}
 			data[i] = []string{plugin.Name, strconv.FormatBool(plugin.Enabled), plugin.Url, fmt.Sprintf("%s", cat)}
 		}
-		cell := tw.CellConfig{
-			Formatting: tw.CellFormatting{
-				MaxWidth:  100,
-				AutoWrap:  tw.WrapTruncate,
-				Alignment: tw.AlignNone,
-			},
-		}
-		utils.PrintListWithCellConfig(headers, &data, cell)
+		utils.PrintList(headers, &data)
 
 		return nil
 	}

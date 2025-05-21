@@ -2,9 +2,8 @@ package utils
 
 import (
 	"fmt"
-	"github.com/olekukonko/tablewriter"
-	"github.com/olekukonko/tablewriter/tw"
-	"os"
+	"github.com/charmbracelet/lipgloss"
+	"github.com/charmbracelet/lipgloss/table"
 	"strconv"
 	"unicode/utf8"
 )
@@ -36,38 +35,33 @@ func TruncateString(str string, start int, end int) string {
 	return string(runes[start:end])
 }
 
-func PrintListWithCellConfig(headers []string, data *[][]string, cell tw.CellConfig) {
-	if data == nil || len(*data) <= 0 {
-		return
-	}
-	table := tablewriter.NewTable(os.Stdout,
-		tablewriter.WithConfig(tablewriter.Config{
-			Row: cell,
-		}),
-	)
-
-	table.Header(headers)
-	err := table.Bulk(*data)
-	if err != nil {
-		fmt.Printf("PrintListWithCellConfig error: %v\n", err)
-		return
-	}
-	err = table.Render()
-	if err != nil {
-		fmt.Printf("PrintListWithCellConfig error: %v\n", err)
-		return
-	}
+func PrintList(headers []string, data *[][]string) {
+	PrintListWithStyleFunc(headers, data, func(row, col int) lipgloss.Style {
+		if row == table.HeaderRow {
+			return DefaultHeaderStyle()
+		}
+		return DefaultCellStyle()
+	}, true)
 }
 
-func PrintList(headers []string, data *[][]string) {
-	c := tw.CellConfig{
-		Formatting: tw.CellFormatting{
-			MaxWidth:  50,
-			AutoWrap:  tw.WrapTruncate,
-			Alignment: tw.AlignNone,
-		},
+func PrintListWithStyleFunc(headers []string, data *[][]string, styleFunc table.StyleFunc, wrap bool) {
+	t := table.New().
+		Border(lipgloss.ASCIIBorder()).
+		Headers(headers...).
+		StyleFunc(styleFunc).
+		Wrap(wrap)
+	for _, row := range *data {
+		t.Rows(row)
 	}
-	PrintListWithCellConfig(headers, data, c)
+	fmt.Println(t)
+}
+
+func DefaultHeaderStyle() lipgloss.Style {
+	return lipgloss.NewStyle().Align(lipgloss.Center)
+}
+
+func DefaultCellStyle() lipgloss.Style {
+	return lipgloss.NewStyle().MarginLeft(1).MarginRight(1).Align(lipgloss.Left)
 }
 
 const (

@@ -2,7 +2,8 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/olekukonko/tablewriter/tw"
+	"github.com/charmbracelet/lipgloss"
+	"github.com/charmbracelet/lipgloss/table"
 	"github.com/spf13/cobra"
 	"qbit-cli/internal/api"
 	"qbit-cli/pkg/utils"
@@ -43,14 +44,15 @@ func JobList() *cobra.Command {
 			data = append(data, []string{v.JobName(), fmt.Sprintf("%v", tags), description})
 		}
 
-		c := tw.CellConfig{
-			Formatting: tw.CellFormatting{
-				MaxWidth:  50,
-				AutoWrap:  tw.WrapNormal,
-				Alignment: tw.AlignNone,
-			},
-		}
-		utils.PrintListWithCellConfig(header, &data, c)
+		utils.PrintListWithStyleFunc(header, &data, func(row, col int) lipgloss.Style {
+			if row == table.HeaderRow {
+				return utils.DefaultHeaderStyle()
+			}
+			if col == 2 {
+				return utils.DefaultCellStyle().Width(50)
+			}
+			return utils.DefaultCellStyle()
+		}, true)
 
 		return nil
 	}

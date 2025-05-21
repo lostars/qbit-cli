@@ -73,12 +73,15 @@ func UpdatePreference() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "sp <key>",
 		Short: "Update app preferences",
-		Long:  `Paths in scan_dirs must exist, otherwise this option will have no effect`,
-		Example: `sp "locale" --value="zh_CN"
-sp "schedule_from_hour" --value=1
-sp "scheduler_enabled" --value=false
-sp "scan_dirs" --scan-dirs="/home/user/Downloads/incoming/movies:1"
-sp "scan_dirs" --scan-dirs=":" (clear scan_dirs)`,
+		Long: `Paths in scan_dirs must exist, otherwise this option will have no effect.
+Attention: if wrong preference key or wrong value format set, it will takes no effect and returns no error
+You can get details from https://github.com/qbittorrent/qBittorrent/wiki/WebUI-API-%28qBittorrent-5.0%29#get-application-preferences`,
+		Example: `  sp "locale" --value="zh_CN"
+  sp "schedule_from_hour" --value=1
+  sp "scheduler_enabled" --value=false
+  sp "scan_dirs" --scan-dirs="/home/user/Downloads/incoming/movies:1"
+  sp "scan_dirs" --scan-dirs="/path/to/a:1" --scan-dirs="/path/to/b:0"
+  sp "scan_dirs" --scan-dirs=":" (clear scan_dirs)`,
 		Args: func(cmd *cobra.Command, args []string) error {
 			if len(args) < 1 {
 				return errors.New("requires preference key")

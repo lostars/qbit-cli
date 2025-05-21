@@ -45,7 +45,7 @@ func JobList() *cobra.Command {
 
 		c := tw.CellConfig{
 			Formatting: tw.CellFormatting{
-				MaxWidth:  100,
+				MaxWidth:  50,
 				AutoWrap:  tw.WrapNormal,
 				Alignment: tw.AlignNone,
 			},

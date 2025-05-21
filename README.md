@@ -70,6 +70,7 @@ Available Commands:
 ```
 
 **search**
+
 You can use `--auto-download=true` `--torrent-regex=batman` to download torrents automatically.
 `qbit torrent search -h` for more details.
 
@@ -120,6 +121,6 @@ Available Commands:
 ```
 Available Commands:
   info        Show app info
-  p           Show app preferences in formated json(if not filter set)
+  p           Show app preferences in formated json(if no filter set)
   sp          Update app preferences
 ```

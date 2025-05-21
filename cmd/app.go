@@ -41,13 +41,13 @@ func AppInfo() *cobra.Command {
 func AppPreference() *cobra.Command {
 	var cmd = &cobra.Command{
 		Use:   "p",
-		Short: "Show app preferences in formated json(if not filter set)",
+		Short: "Show app preferences in formated json(if no filter set)",
 		Long: `Most preferences is key-value format except "scan_dirs":
 {
     "/home/user/Downloads/incoming/games": 0,
     "/home/user/Downloads/incoming/movies": 1,
 }
-So take care when you want to modify this preference.`,
+So take care when you modify this preference.`,
 	}
 
 	var filter string

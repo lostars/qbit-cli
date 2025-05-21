@@ -1,6 +1,8 @@
 package api
 
-import "fmt"
+import (
+	"fmt"
+)
 
 type SearchResults struct {
 	Results []SearchDetail `json:"results"`
@@ -49,6 +51,7 @@ type RssRule struct {
 	AffectedFeeds             []string `json:"affectedFeeds"`
 	IgnoreDays                int32    `json:"ignoreDays"`
 	LastMatch                 string   `json:"lastMatch"`
+	SmartFilter               bool     `json:"smartFilter"`
 	AddPaused                 bool     `json:"addPaused"`
 	AssignedCategory          string   `json:"assignedCategory"`
 	SavePath                  string   `json:"savePath"`

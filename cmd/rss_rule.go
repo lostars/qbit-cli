@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/spf13/cobra"
 	"qbit-cli/internal/api"
@@ -20,7 +21,7 @@ func RssRule() *cobra.Command {
 func RuleList() *cobra.Command {
 	var cmd = &cobra.Command{
 		Use:   "list",
-		Short: "RSS rule list",
+		Short: "RSS rule list display as formated json",
 	}
 
 	cmd.RunE = func(c *cobra.Command, args []string) error {
@@ -29,11 +30,11 @@ func RuleList() *cobra.Command {
 		if err != nil {
 			return err
 		}
-
-		for ruleName, rule := range ruleMap {
-			fmt.Printf("ruleName: [%s] enabled: [%v] mustContain: [%v] mustNotContain: [%v] useRegex: [%v] affectedFeeds: [%v]\n ",
-				ruleName, rule.Enabled, rule.MustContain, rule.MustNotContain, rule.UseRegex, rule.AffectedFeeds)
+		data, err := json.MarshalIndent(ruleMap, "", "  ")
+		if err != nil {
+			return err
 		}
+		fmt.Println(string(data))
 
 		return nil
 	}

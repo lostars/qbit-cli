@@ -98,6 +98,9 @@ You may find all types here: https://dev.emby.media/doc/restapi/Item-Types.html`
 		if err != nil {
 			return err
 		}
+		if items.TotalRecordCount <= 0 {
+			return nil
+		}
 
 		fmt.Printf("total items: %d\n", items.TotalRecordCount)
 		headers := []string{"ID", "Name", "Type", "PremiereDate"}

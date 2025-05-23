@@ -51,10 +51,8 @@ func PrintListWithColWidth(headers []string, data *[][]string, widthMap map[int]
 		if row == table.HeaderRow {
 			return DefaultHeaderStyle()
 		}
-		for c, width := range widthMap {
-			if col == c {
-				return lipgloss.NewStyle().Width(width).PaddingLeft(1).PaddingRight(1)
-			}
+		if width := widthMap[col]; width > 0 {
+			return lipgloss.NewStyle().Width(width).PaddingLeft(1).PaddingRight(1)
 		}
 		return DefaultCellStyle()
 	}, warp)
@@ -134,7 +132,7 @@ func (m *InteractiveModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m *InteractiveModel) View() string {
-	selectedStyle := DefaultCellStyle().Foreground(lipgloss.Color("#000000")).Background(lipgloss.Color("#FFFFFF"))
+	wrap := m.WidthMap == nil || len(m.WidthMap) <= 0
 	ta := table.New().
 		Border(lipgloss.ASCIIBorder()).
 		Width(m.width).
@@ -143,17 +141,24 @@ func (m *InteractiveModel) View() string {
 			if row == table.HeaderRow {
 				return DefaultHeaderStyle()
 			}
-			dataIndex := m.startIndex + row
-			if dataIndex == m.cursor {
-				return selectedStyle
-			}
-			for c, width := range m.WidthMap {
-				if col == c {
-					return lipgloss.NewStyle().Width(width).PaddingLeft(1).PaddingRight(1)
+			var style lipgloss.Style
+			if wrap {
+				style = DefaultCellStyle()
+			} else {
+				if width := m.WidthMap[col]; width > 0 {
+					style = lipgloss.NewStyle().Width(width).PaddingLeft(1).PaddingRight(1)
+				} else {
+					style = DefaultCellStyle()
 				}
 			}
-			return DefaultCellStyle()
-		}).Wrap(false)
+
+			dataIndex := m.startIndex + row
+			if dataIndex == m.cursor {
+				return style.Foreground(lipgloss.Color("#000000")).Background(lipgloss.Color("#FFFFFF"))
+			}
+
+			return style
+		}).Wrap(wrap)
 
 	maxVisible := m.height - 4
 	if maxVisible < 1 {

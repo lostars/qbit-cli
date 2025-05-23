@@ -52,7 +52,7 @@ func PrintListWithColWidth(headers []string, data *[][]string, widthMap map[int]
 			return DefaultHeaderStyle()
 		}
 		if width := widthMap[col]; width > 0 {
-			return lipgloss.NewStyle().Width(width).PaddingLeft(1).PaddingRight(1)
+			return DefaultCellStyle().Width(width)
 		}
 		return DefaultCellStyle()
 	}, warp)
@@ -75,7 +75,7 @@ func DefaultHeaderStyle() lipgloss.Style {
 }
 
 func DefaultCellStyle() lipgloss.Style {
-	return lipgloss.NewStyle().MarginLeft(1).MarginRight(1).Align(lipgloss.Left)
+	return lipgloss.NewStyle().PaddingLeft(1).PaddingRight(1).Align(lipgloss.Left)
 }
 
 type InteractiveModel struct {
@@ -125,7 +125,7 @@ func (m *InteractiveModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.startIndex = m.cursor - maxVisible + 1
 		}
 	case tea.WindowSizeMsg:
-		m.width = msg.Width - 2
+		m.width = msg.Width - 1
 		m.height = msg.Height - 2
 	}
 	return m, nil
@@ -141,14 +141,10 @@ func (m *InteractiveModel) View() string {
 			if row == table.HeaderRow {
 				return DefaultHeaderStyle()
 			}
-			var style lipgloss.Style
-			if wrap {
-				style = DefaultCellStyle()
-			} else {
+			style := DefaultCellStyle()
+			if !wrap {
 				if width := m.WidthMap[col]; width > 0 {
-					style = lipgloss.NewStyle().Width(width).PaddingLeft(1).PaddingRight(1)
-				} else {
-					style = DefaultCellStyle()
+					style = style.Width(width)
 				}
 			}
 

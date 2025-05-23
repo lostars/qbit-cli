@@ -2,6 +2,7 @@ package utils
 
 import (
 	"fmt"
+	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/charmbracelet/lipgloss/table"
 	"strconv"
@@ -52,10 +53,7 @@ func PrintListWithColWidth(headers []string, data *[][]string, widthMap map[int]
 		}
 		for c, width := range widthMap {
 			if col == c {
-				// TODO truncate string with ... tail is invalid when margin enabled
-				// https://github.com/charmbracelet/lipgloss/issues/493
-				//return DefaultCellStyle().Width(width)
-				return lipgloss.NewStyle().Width(width)
+				return lipgloss.NewStyle().Width(width).PaddingLeft(1).PaddingRight(1)
 			}
 		}
 		return DefaultCellStyle()
@@ -80,6 +78,97 @@ func DefaultHeaderStyle() lipgloss.Style {
 
 func DefaultCellStyle() lipgloss.Style {
 	return lipgloss.NewStyle().MarginLeft(1).MarginRight(1).Align(lipgloss.Left)
+}
+
+type InteractiveModel struct {
+	Rows          *[][]string
+	Header        *[]string
+	cursor        int
+	width, height int
+	startIndex    int
+	WidthMap      map[int]int
+	Delegate      InteractiveKeyMsgDelegate
+}
+
+type InteractiveKeyMsgDelegate interface {
+	Operation(msg tea.KeyMsg, cursor int) tea.Cmd
+}
+
+func (m *InteractiveModel) Init() tea.Cmd {
+	return nil
+}
+
+func (m *InteractiveModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	switch msg := msg.(type) {
+	case tea.KeyMsg:
+		switch msg.String() {
+		default:
+			if m.Delegate != nil {
+				return m, m.Delegate.Operation(msg, m.cursor)
+			}
+		case "up", "k":
+			if m.cursor > 0 {
+				m.cursor--
+			}
+		case "down", "j":
+			if m.cursor < len(*m.Rows)-1 {
+				m.cursor++
+			}
+		case "ctrl+c", "q":
+			return m, tea.Quit
+		}
+		maxVisible := m.height - 4
+		if maxVisible < 1 {
+			maxVisible = 1
+		}
+		if m.cursor < m.startIndex {
+			m.startIndex = m.cursor
+		} else if m.cursor >= m.startIndex+maxVisible {
+			m.startIndex = m.cursor - maxVisible + 1
+		}
+	case tea.WindowSizeMsg:
+		m.width = msg.Width - 2
+		m.height = msg.Height - 2
+	}
+	return m, nil
+}
+
+func (m *InteractiveModel) View() string {
+	selectedStyle := DefaultCellStyle().Foreground(lipgloss.Color("#000000")).Background(lipgloss.Color("#FFFFFF"))
+	ta := table.New().
+		Border(lipgloss.ASCIIBorder()).
+		Width(m.width).
+		Headers(*m.Header...).
+		StyleFunc(func(row, col int) lipgloss.Style {
+			if row == table.HeaderRow {
+				return DefaultHeaderStyle()
+			}
+			dataIndex := m.startIndex + row
+			if dataIndex == m.cursor {
+				return selectedStyle
+			}
+			for c, width := range m.WidthMap {
+				if col == c {
+					return lipgloss.NewStyle().Width(width).PaddingLeft(1).PaddingRight(1)
+				}
+			}
+			return DefaultCellStyle()
+		}).Wrap(false)
+
+	maxVisible := m.height - 4
+	if maxVisible < 1 {
+		maxVisible = 1
+	}
+	end := m.startIndex + maxVisible
+	if end > len(*m.Rows) {
+		end = len(*m.Rows)
+	}
+	for i := m.startIndex; i < end; i++ {
+		d := *m.Rows
+		ta.Rows(d[i])
+	}
+
+	return ta.String() + "\n"
 }
 
 const (

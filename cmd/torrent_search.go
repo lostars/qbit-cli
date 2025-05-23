@@ -1,11 +1,14 @@
 package cmd
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
+	tea "github.com/charmbracelet/bubbletea"
 	"github.com/spf13/cobra"
 	"net/url"
 	"qbit-cli/internal/api"
+	"qbit-cli/pkg/utils"
 	"regexp"
 	"strconv"
 	"time"
@@ -21,7 +24,7 @@ func TorrentSearch() *cobra.Command {
 		Long: `Be attention when you enable auto download,
 and ensure that torrent-regex works properly to void unnecessary downloads.
 Auto download calls "torrent add ...", which means it also reads default save values of torrent part on config file.
-This list will show as k:v caused by long magnet display.
+This list display formated json.
 `,
 		Example: `qbit torrent search <keyword> --category=movie --plugins=bt4g`,
 		Args: func(cmd *cobra.Command, args []string) error {
@@ -36,6 +39,7 @@ This list will show as k:v caused by long magnet display.
 		category, plugins                              string
 		autoDownload, autoMM                           bool
 		torrentRegex, savePath, saveCategory, saveTags string
+		interactive                                    bool
 	)
 
 	// search flags
@@ -51,6 +55,7 @@ make sure you plugin is valid and enabled`)
 	searchCmd.Flags().StringVar(&saveCategory, "save-category", "", "torrent save category, valid only when auto download enabled")
 	searchCmd.Flags().StringVar(&savePath, "save-path", "", "torrent save path, valid only when auto download enabled")
 	searchCmd.Flags().StringVar(&saveTags, "save-tags", "", "torrent save tags, valid only when auto download enabled")
+	searchCmd.Flags().BoolVarP(&interactive, "interactive", "i", false, "interactive mode")
 
 	searchCmd.RunE = func(cmd *cobra.Command, args []string) error {
 
@@ -98,17 +103,44 @@ make sure you plugin is valid and enabled`)
 			}
 		}
 
-		fmt.Printf("total search result size: %d\n", len(printList))
-		for _, r := range printList {
-			fmt.Printf("%s : %s\n\n", r.FileName, r.FileURL)
-		}
-
-		if autoDownload && len(printList) > 0 {
-			var downloadList = make([]string, 0, len(printList))
-			for _, r := range printList {
-				downloadList = append(downloadList, r.FileURL)
+		if interactive {
+			interactive = interactive && len(printList) > 0
+			if interactive {
+				header := []string{"name", "size", "S", "L", "plugin"}
+				data := make([][]string, 0, len(printList))
+				for _, r := range printList {
+					data = append(data, []string{r.FileName, utils.FormatFileSizeAuto(uint64(r.FileSize), 1),
+						strconv.FormatInt(int64(r.NBSeeders), 10), strconv.FormatInt(int64(r.NBLeechers), 10), r.EngineName})
+				}
+				model := utils.InteractiveModel{
+					Rows:     &data,
+					Header:   &header,
+					WidthMap: map[int]int{0: 50, 1: 10, 2: 10, 3: 10, 4: 20},
+					Delegate: &torrentSearchMsgDelegate{
+						autoDownload, autoMM,
+						savePath, saveCategory, saveTags,
+						printList,
+					},
+				}
+				if _, e := tea.NewProgram(&model).Run(); e != nil {
+					return e
+				}
 			}
-			AutoDownload(downloadList, savePath, saveCategory, saveTags, autoMM)
+		} else {
+			fmt.Printf("total search result size: %d\n", len(printList))
+			str, err := json.MarshalIndent(printList, "", "  ")
+			if err != nil {
+				return err
+			}
+			fmt.Println(string(str))
+
+			if autoDownload && len(printList) > 0 {
+				var downloadList = make([]string, 0, len(printList))
+				for _, r := range printList {
+					downloadList = append(downloadList, r.FileURL)
+				}
+				AutoDownload(downloadList, savePath, saveCategory, saveTags, autoMM)
+			}
 		}
 
 		return nil
@@ -128,5 +160,37 @@ func AutoDownload(urls []string, savePath, saveCategory, saveTags string, autoMM
 		fmt.Println("auto download failed:", err)
 	} else {
 		fmt.Printf("auto download %d torrent(s) success\n", len(urls))
+	}
+}
+
+type torrentSearchMsgDelegate struct {
+	autoDownload, autoMM             bool
+	savePath, saveCategory, saveTags string
+	data                             []*api.SearchDetail
+}
+
+func (j *torrentSearchMsgDelegate) Operation(msg tea.KeyMsg, cursor int) tea.Cmd {
+	switch msg.String() {
+	case "enter":
+		if j.data == nil || cursor >= len(j.data) {
+			return nil
+		}
+		torrents := j.data[cursor].FileURL
+		_ = InteractiveDownload([]string{torrents}, j.savePath, j.saveCategory, j.saveTags, j.autoMM)
+	}
+	return nil
+}
+
+func InteractiveDownload(urls []string, savePath, saveCategory, saveTags string, autoMM bool) string {
+	addParams := url.Values{}
+	addParams.Set("category", saveCategory)
+	addParams.Set("tags", saveTags)
+	addParams.Set("auto-manage", strconv.FormatBool(autoMM))
+	addParams.Set("save-path", savePath)
+	LoadTorrentAddDefault(addParams)
+	if err := api.TorrentAdd(urls, addParams); err != nil {
+		return fmt.Sprintf("auto download failed: %s", err)
+	} else {
+		return fmt.Sprintf("auto download %d torrent(s) success\n", len(urls))
 	}
 }

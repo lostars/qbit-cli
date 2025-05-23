@@ -18,6 +18,7 @@ type SearchDetail struct {
 	NBLeechers int32  `json:"nbLeechers"`
 	NBSeeders  int32  `json:"nbSeeders"`
 	SiteUrl    string `json:"siteUrl"`
+	EngineName string `json:"engineName"`
 }
 
 type SearchResult struct {

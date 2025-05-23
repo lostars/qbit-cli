@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	tea "github.com/charmbracelet/bubbletea"
 	"github.com/spf13/cobra"
 	"qbit-cli/internal/api"
 	"qbit-cli/pkg/utils"
@@ -28,6 +29,7 @@ func JackettSearch() *cobra.Command {
 	var indexer, torrentRegex string
 	var jsonFormat bool
 	var category []string
+	var interactive bool
 
 	searchCmd.Flags().BoolVar(&autoDownload, "auto-download", false, "auto download")
 	searchCmd.Flags().BoolVar(&autoMM, "auto-manage", true, "whether enable torrent auto management default is true, valid only when auto download enabled")
@@ -39,6 +41,7 @@ func JackettSearch() *cobra.Command {
 	searchCmd.Flags().StringVar(&torrentRegex, "torrent-regex", "", "result title filter")
 	searchCmd.Flags().BoolVar(&jsonFormat, "json", false, "display results as json format")
 	searchCmd.Flags().StringSliceVar(&category, "category", []string{}, "category")
+	searchCmd.Flags().BoolVarP(&interactive, "interactive", "i", false, "interactive mode")
 
 	searchCmd.RunE = func(cmd *cobra.Command, args []string) error {
 		result, err := api.JackettSearch(indexer, category, args[0])
@@ -94,7 +97,24 @@ func JackettSearch() *cobra.Command {
 					data = append(data, []string{r.TrackerId, r.Title, utils.FormatFileSizeAuto(uint64(r.Size), 1),
 						r.CategoryDesc, strconv.FormatInt(int64(r.Seeders), 10), strconv.FormatInt(int64(r.Peers), 10)})
 				}
-				utils.PrintListWithColWidth(header, &data, map[int]int{1: 50}, false)
+				interactive = interactive && len(downloadList) > 0
+				if interactive {
+					model := utils.InteractiveModel{
+						Rows:     &data,
+						Header:   &header,
+						WidthMap: map[int]int{0: 10, 1: 50, 2: 10, 3: 20, 4: 10, 5: 10},
+						Delegate: &jackettMsgDelegate{
+							autoDownload, autoMM,
+							savePath, saveCategory, saveTags,
+							downloadList,
+						},
+					}
+					if _, e := tea.NewProgram(&model).Run(); e != nil {
+						return e
+					}
+				} else {
+					utils.PrintListWithColWidth(header, &data, map[int]int{1: 50}, false)
+				}
 			}
 		}
 
@@ -102,4 +122,25 @@ func JackettSearch() *cobra.Command {
 	}
 
 	return searchCmd
+}
+
+type jackettMsgDelegate struct {
+	autoDownload, autoMM             bool
+	savePath, saveCategory, saveTags string
+	data                             []*api.JackettResult
+}
+
+func (j *jackettMsgDelegate) Operation(msg tea.KeyMsg, cursor int) tea.Cmd {
+	switch msg.String() {
+	case "enter":
+		if j.data == nil || cursor >= len(j.data) {
+			return nil
+		}
+		torrents := j.data[cursor].MagnetUri
+		if torrents == "" {
+			torrents = j.data[cursor].Link
+		}
+		_ = InteractiveDownload([]string{torrents}, j.savePath, j.saveCategory, j.saveTags, j.autoMM)
+	}
+	return nil
 }

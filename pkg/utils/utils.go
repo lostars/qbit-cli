@@ -5,6 +5,7 @@ import (
 	"github.com/charmbracelet/lipgloss"
 	"github.com/charmbracelet/lipgloss/table"
 	"strconv"
+	"strings"
 	"unicode/utf8"
 )
 
@@ -93,13 +94,29 @@ func FormatPercent(decimal float64) string {
 }
 
 func FormatFileSizeAuto(bytes uint64, decimal int) string {
+	str := ""
+	unit := ""
 	if bytes < 1024 {
-		return strconv.FormatUint(bytes, 10) + BYTE
+		str = strconv.FormatUint(bytes, 10)
+		unit = BYTE
 	} else if bytes < 1024*1024 {
-		return strconv.FormatFloat(float64(bytes)/1024, 'f', decimal, 64) + KB
+		str = strconv.FormatFloat(float64(bytes)/1024, 'f', decimal, 64)
+		unit = KB
 	} else if bytes < 1024*1024*1024 {
-		return strconv.FormatFloat(float64(bytes)/1024/1024, 'f', decimal, 64) + MB
+		str = strconv.FormatFloat(float64(bytes)/1024/1024, 'f', decimal, 64)
+		unit = MB
 	} else {
-		return strconv.FormatFloat(float64(bytes)/1024/1024/1024, 'f', decimal, 64) + GB
+		str = strconv.FormatFloat(float64(bytes)/1024/1024/1024, 'f', decimal, 64)
+		unit = GB
+	}
+	if decimal > 0 {
+		zero := make([]string, 0, decimal+1)
+		zero = append(zero, ".")
+		for i := 0; i < decimal; i++ {
+			zero = append(zero, "0")
+		}
+		return strings.TrimSuffix(str, strings.Join(zero, "")) + unit
+	} else {
+		return str + unit
 	}
 }

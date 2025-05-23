@@ -76,6 +76,44 @@ func (c *QbitClient) pwd() string {
 	return c.Config.Server.Password
 }
 
+type JackettClient struct {
+	Config *config.Config
+	Client *http.Client
+}
+
+var jackettClient *JackettClient
+
+func GetJackettClient() *JackettClient {
+	if jackettClient != nil {
+		return jackettClient
+	}
+	jackettClient = &JackettClient{
+		Config: config.GetConfig(),
+		Client: &http.Client{Timeout: time.Second * 10},
+	}
+	return jackettClient
+}
+
+func (c *JackettClient) Get(endpoint string, params url.Values) (*http.Response, error) {
+	if params == nil {
+		params = url.Values{}
+	}
+	params.Set("apikey", c.Config.Jackett.ApiKey)
+	fullUrl := c.Config.Jackett.Host + endpoint
+	fullUrl += "?" + params.Encode()
+
+	req, err := http.NewRequest(http.MethodGet, fullUrl, nil)
+	if err != nil {
+		return nil, &HTTPClientError{"Get", fullUrl, err}
+	}
+
+	resp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	return resp, nil
+}
+
 type EmbyClient struct {
 	Config *config.Config
 	Client *http.Client

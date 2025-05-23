@@ -108,21 +108,25 @@ make sure you plugin is valid and enabled`)
 			for _, r := range printList {
 				downloadList = append(downloadList, r.FileURL)
 			}
-			addParams := url.Values{}
-			addParams.Set("category", saveCategory)
-			addParams.Set("tags", saveTags)
-			addParams.Set("auto-manage", strconv.FormatBool(autoMM))
-			addParams.Set("save-path", savePath)
-			LoadTorrentAddDefault(addParams)
-			if err := api.TorrentAdd(downloadList, addParams); err != nil {
-				fmt.Println("auto download failed:", err)
-			} else {
-				fmt.Printf("auto download %d torrent(s) success\n", len(urls))
-			}
+			AutoDownload(downloadList, savePath, saveCategory, saveTags, autoMM)
 		}
 
 		return nil
 	}
 
 	return searchCmd
+}
+
+func AutoDownload(urls []string, savePath, saveCategory, saveTags string, autoMM bool) {
+	addParams := url.Values{}
+	addParams.Set("category", saveCategory)
+	addParams.Set("tags", saveTags)
+	addParams.Set("auto-manage", strconv.FormatBool(autoMM))
+	addParams.Set("save-path", savePath)
+	LoadTorrentAddDefault(addParams)
+	if err := api.TorrentAdd(urls, addParams); err != nil {
+		fmt.Println("auto download failed:", err)
+	} else {
+		fmt.Printf("auto download %d torrent(s) success\n", len(urls))
+	}
 }

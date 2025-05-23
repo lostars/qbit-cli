@@ -9,6 +9,7 @@ func JackettCmd() *cobra.Command {
 	}
 
 	cmd.AddCommand(JackettFeed())
+	cmd.AddCommand(JackettSearch())
 
 	return cmd
 }

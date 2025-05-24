@@ -9,6 +9,7 @@ torrent:
 jackett:
   host: ""
   api-key: ""
+  cookie: "Jackett:xx"
 emby:
   host: ""
   api-key: ""

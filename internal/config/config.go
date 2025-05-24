@@ -27,6 +27,7 @@ type Config struct {
 	Jackett struct {
 		Host   string `yaml:"host" validate:"required"`
 		ApiKey string `yaml:"api-key"`
+		Cookie string `yaml:"cookie"`
 	} `yaml:"jackett"`
 
 	Emby struct {

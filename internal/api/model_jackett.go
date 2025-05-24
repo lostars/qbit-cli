@@ -3,16 +3,26 @@ package api
 import "time"
 
 type JackettIndexer struct {
-	ElapsedTime int    `json:"ElapsedTime"`
-	ID          string `json:"ID"`
-	Name        string `json:"Name"`
-	Results     int    `json:"Results"`
-	Status      int    `json:"Status"`
+	ID         string `json:"id"`
+	Configured bool   `json:"configured"`
+	Language   string `json:"language"`
+	SiteLink   string `json:"site_link"`
+	Type       string `json:"type"`
+	Caps       *[]struct {
+		ID   string `json:"ID"`
+		Name string `json:"Name"`
+	} `json:"caps"`
 }
 
 type JackettResults struct {
-	Indexers *[]JackettIndexer `json:"Indexers"`
-	Results  *[]JackettResult  `json:"Results"`
+	Indexers *[]struct {
+		ElapsedTime int    `json:"ElapsedTime"`
+		ID          string `json:"ID"`
+		Name        string `json:"Name"`
+		Results     int    `json:"Results"`
+		Status      int    `json:"Status"`
+	} `json:"Indexers"`
+	Results *[]JackettResult `json:"Results"`
 }
 
 type JackettResult struct {

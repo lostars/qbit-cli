@@ -24,3 +24,17 @@ func JackettSearch(indexer string, category []string, query string) (*JackettRes
 	}
 	return &result, nil
 }
+
+func JackettIndexers() (*[]JackettIndexer, error) {
+	resp, err := GetJackettClient().Get("/api/v2.0/indexers", url.Values{})
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	var result []JackettIndexer
+	err = ParseJSON(resp, &result)
+	if err != nil {
+		return nil, err
+	}
+	return &result, nil
+}

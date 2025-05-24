@@ -52,7 +52,27 @@ Be aware of your user permissions, `emby` command use `/emby/Users/**` apis.
 
 ## Commands
 
-You can use `qbit -h` `qbit [command] -h` for details.
+```
+Usage:
+  qbit [flags]
+  qbit [command]
+
+Available Commands:
+  app         Manage app
+  completion  Generate the autocompletion script for the specified shell
+  emby        Emby management
+  help        Help about any command
+  jackett     Manage Jackett
+  job         Job management
+  plugin      Manage search plugins
+  rss         Manage RSS
+  torrent     Manage torrents
+
+Flags:
+  -c, --config string   qbit config file path
+  -h, --help            help for qbit
+  -v, --version         qbit cli version
+```
 
 ### torrent
 ```

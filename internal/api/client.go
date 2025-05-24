@@ -94,6 +94,10 @@ func GetJackettClient() *JackettClient {
 	return jackettClient
 }
 
+var jackettAuthEndpoint = []string{
+	"/api/v2.0/indexers",
+}
+
 func (c *JackettClient) Get(endpoint string, params url.Values) (*http.Response, error) {
 	if params == nil {
 		params = url.Values{}
@@ -106,7 +110,12 @@ func (c *JackettClient) Get(endpoint string, params url.Values) (*http.Response,
 	if err != nil {
 		return nil, &HTTPClientError{"Get", fullUrl, err}
 	}
-
+	for _, e := range jackettAuthEndpoint {
+		if e == endpoint {
+			req.Header.Set("Cookie", c.Config.Jackett.Cookie)
+			break
+		}
+	}
 	resp, err := c.Client.Do(req)
 	if err != nil {
 		return nil, err

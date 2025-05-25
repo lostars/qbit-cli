@@ -156,6 +156,10 @@ func (t *torrentSearch) fetchData() (*[]api.Torrent, error) {
 	return &torrentList, nil
 }
 
+func (t *torrentSearch) Headers() *[]string {
+	return nil
+}
+
 func (t *torrentSearch) Rows() *[][]string {
 	torrentList, err := t.fetchData()
 	if err != nil {

@@ -87,7 +87,7 @@ type InteractiveTableModel struct {
 	startIndex    int
 	WidthMap      map[int]int
 	Delegate      InteractiveKeyMsgDelegate
-	DataDelegate  DynamicDataDelegate
+	DataDelegate  DynamicTableDelegate
 	notifyMsg     *NotifyMsg
 	clickedMap    map[int]bool
 }
@@ -111,8 +111,9 @@ type InteractiveKeyMsgDelegate interface {
 	Desc() string
 }
 
-type DynamicDataDelegate interface {
+type DynamicTableDelegate interface {
 	Rows() *[][]string
+	Headers() *[]string
 	Frequency() time.Duration
 }
 
@@ -141,6 +142,10 @@ func (m *InteractiveTableModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		data := m.DataDelegate.Rows()
 		if data == nil {
 			data = &[][]string{}
+		}
+		headers := m.DataDelegate.Headers()
+		if headers != nil {
+			m.Header = headers
 		}
 		m.Rows = data
 		return m, tea.Tick(m.DataDelegate.Frequency(), func(t time.Time) tea.Msg {

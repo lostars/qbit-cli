@@ -169,7 +169,7 @@ type torrentSearchMsgDelegate struct {
 	data                             []*api.SearchDetail
 }
 
-func (j *torrentSearchMsgDelegate) Operation(msg tea.KeyMsg, cursor int) tea.Cmd {
+func (j *torrentSearchMsgDelegate) Operation(msg tea.KeyMsg, cursor int) *utils.KeyMsgDelegateModel {
 	switch msg.String() {
 	case "enter":
 		if j.data == nil || cursor >= len(j.data) {
@@ -177,15 +177,16 @@ func (j *torrentSearchMsgDelegate) Operation(msg tea.KeyMsg, cursor int) tea.Cmd
 		}
 		torrents := j.data[cursor].FileURL
 		str := InteractiveDownload([]string{torrents}, j.savePath, j.saveCategory, j.saveTags, j.autoMM)
-		return func() tea.Msg {
-			return utils.NotifyMsg{Msg: str, Duration: time.Second}
+		return &utils.KeyMsgDelegateModel{
+			RenderClicked: true,
+			NotifyMsg:     utils.NotifyMsg{Msg: str, Duration: time.Second},
 		}
 	}
 	return nil
 }
 
 func (j *torrentSearchMsgDelegate) Desc() string {
-	return "[enter] to download"
+	return "[enter] download"
 }
 
 func InteractiveDownload(urls []string, savePath, saveCategory, saveTags string, autoMM bool) string {
@@ -196,8 +197,8 @@ func InteractiveDownload(urls []string, savePath, saveCategory, saveTags string,
 	addParams.Set("save-path", savePath)
 	LoadTorrentAddDefault(addParams)
 	if err := api.TorrentAdd(urls, addParams); err != nil {
-		return fmt.Sprintf("auto download failed: %s", err)
+		return fmt.Sprintf("download failed: %s", err)
 	} else {
-		return fmt.Sprintf("auto download %d torrent(s) success\n", len(urls))
+		return "download success"
 	}
 }

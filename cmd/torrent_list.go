@@ -50,6 +50,7 @@ stalled, stalled_uploading, stalled_downloading, errored`)
 				Header:       &headers,
 				WidthMap:     map[int]int{0: 30},
 				DataDelegate: &d,
+				Delegate:     &d,
 			}
 			if _, e := tea.NewProgram(&model, tea.WithAltScreen()).Run(); e != nil {
 				return e
@@ -79,10 +80,50 @@ stalled, stalled_uploading, stalled_downloading, errored`)
 type torrentSearch struct {
 	state, category, tag, hashes string
 	limit, offset                uint32
+	rows                         *[][]string
 }
 
 func (t *torrentSearch) Frequency() time.Duration {
 	return time.Second
+}
+
+func (t *torrentSearch) Operation(msg tea.KeyMsg, cursor int) *utils.KeyMsgDelegateModel {
+	switch msg.String() {
+	case "D":
+		params := url.Values{}
+		params.Set("deleteFiles", "true")
+		return t.notifyReturn(cursor, "delete", params)
+	case "d":
+		params := url.Values{}
+		params.Set("deleteFiles", "false")
+		return t.notifyReturn(cursor, "delete", params)
+	case "r":
+		return t.notifyReturn(cursor, "start", nil)
+	case "p":
+		return t.notifyReturn(cursor, "stop", nil)
+	}
+	return nil
+}
+
+func (t *torrentSearch) notifyReturn(cursor int, operation string, params url.Values) *utils.KeyMsgDelegateModel {
+	data := *t.rows
+	hash := data[cursor][1]
+	notify := "success"
+	if params == nil {
+		params = url.Values{}
+	}
+	params.Set("hashes", hash)
+	if err := api.UpdateTorrent(operation, params); err != nil {
+		notify = err.Error()
+	}
+	return &utils.KeyMsgDelegateModel{
+		RenderClicked: false,
+		NotifyMsg:     utils.NotifyMsg{Msg: notify, Duration: time.Second},
+	}
+}
+
+func (t *torrentSearch) Desc() string {
+	return "[p] pause; [r] resume; [d] delete; [shift+d](D) delete with files"
 }
 
 func (t *torrentSearch) fetchData() (*[]api.Torrent, error) {
@@ -126,5 +167,6 @@ func (t *torrentSearch) Rows() *[][]string {
 		up := utils.FormatFileSizeAuto(uint64(t.UPSpeed), 1) + "/S"
 		data[i] = []string{t.Name, t.Hash, t.Category, t.Tags, t.State, utils.FormatPercent(t.Progress), dl, up}
 	}
+	t.rows = &data
 	return &data
 }

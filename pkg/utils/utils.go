@@ -97,12 +97,17 @@ type NotifyMsg struct {
 	Duration time.Duration
 }
 
+type KeyMsgDelegateModel struct {
+	RenderClicked bool
+	NotifyMsg     NotifyMsg
+}
+
 type ClearNotifyMsg struct{}
 
 type RowUpdateMsg struct{}
 
 type InteractiveKeyMsgDelegate interface {
-	Operation(msg tea.KeyMsg, cursor int) tea.Cmd
+	Operation(msg tea.KeyMsg, cursor int) *KeyMsgDelegateModel
 	Desc() string
 }
 
@@ -154,8 +159,15 @@ func (m *InteractiveTableModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		switch msg.String() {
 		default:
 			if m.Delegate != nil {
-				m.clickedMap[m.cursor] = true
-				return m, m.Delegate.Operation(msg, m.cursor)
+				model := m.Delegate.Operation(msg, m.cursor)
+				if model != nil {
+					if model.RenderClicked {
+						m.clickedMap[m.cursor] = true
+					}
+					return m, func() tea.Msg {
+						return model.NotifyMsg
+					}
+				}
 			}
 		case "up", "k":
 			if m.cursor > 0 {
@@ -179,7 +191,7 @@ func (m *InteractiveTableModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 	case tea.WindowSizeMsg:
 		m.width = msg.Width - 1
-		m.height = msg.Height - 2
+		m.height = msg.Height - 3
 	}
 	return m, nil
 }
@@ -225,15 +237,15 @@ func (m *InteractiveTableModel) View() string {
 		ta.Rows(d[i])
 	}
 
-	desc := `[ctrl+q]([q]) to exit; `
+	desc := `[ctrl+q](q) exit; `
 	if m.Delegate != nil {
 		desc += m.Delegate.Desc()
 	}
 
-	if m.notifyMsg != nil {
-		return fmt.Sprintf("%s\n%s\n%s\n", ta.String(), desc, m.notifyMsg.Msg)
+	if m.notifyMsg != nil && m.notifyMsg.Msg != "" {
+		return fmt.Sprintf("%s\n%s\n%s", ta.String(), desc, m.notifyMsg.Msg)
 	} else {
-		return fmt.Sprintf("%s\n%s\n\n", ta.String(), desc)
+		return fmt.Sprintf("%s\n%s\n", ta.String(), desc)
 	}
 }
 

@@ -132,10 +132,10 @@ type jackettMsgDelegate struct {
 }
 
 func (j *jackettMsgDelegate) Desc() string {
-	return "[enter] to download"
+	return "[enter] download"
 }
 
-func (j *jackettMsgDelegate) Operation(msg tea.KeyMsg, cursor int) tea.Cmd {
+func (j *jackettMsgDelegate) Operation(msg tea.KeyMsg, cursor int) *utils.KeyMsgDelegateModel {
 	switch msg.String() {
 	case "enter":
 		if j.data == nil {
@@ -146,8 +146,9 @@ func (j *jackettMsgDelegate) Operation(msg tea.KeyMsg, cursor int) tea.Cmd {
 			torrents = j.data[cursor].Link
 		}
 		str := InteractiveDownload([]string{torrents}, j.savePath, j.saveCategory, j.saveTags, j.autoMM)
-		return func() tea.Msg {
-			return utils.NotifyMsg{Msg: str, Duration: time.Second}
+		return &utils.KeyMsgDelegateModel{
+			RenderClicked: true,
+			NotifyMsg:     utils.NotifyMsg{Msg: str, Duration: time.Second},
 		}
 	}
 	return nil

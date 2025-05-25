@@ -100,7 +100,7 @@ func JackettSearch() *cobra.Command {
 				}
 				interactive = interactive && len(downloadList) > 0
 				if interactive {
-					model := utils.InteractiveModel{
+					model := utils.InteractiveTableModel{
 						Rows:     &data,
 						Header:   &header,
 						WidthMap: map[int]int{0: 10, 1: 50, 2: 10, 3: 20, 4: 10, 5: 10},
@@ -129,6 +129,10 @@ type jackettMsgDelegate struct {
 	autoDownload, autoMM             bool
 	savePath, saveCategory, saveTags string
 	data                             []*api.JackettResult
+}
+
+func (j *jackettMsgDelegate) Desc() string {
+	return "[enter] to download"
 }
 
 func (j *jackettMsgDelegate) Operation(msg tea.KeyMsg, cursor int) tea.Cmd {

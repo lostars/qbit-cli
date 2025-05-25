@@ -45,8 +45,8 @@ stalled, stalled_uploading, stalled_downloading, errored`)
 		}
 		if interactive {
 			headers := []string{"name", "hash", "category", "tags", "state", "progress", "DOWN", "UP"}
-			model := utils.InteractiveModel{
-				Rows:         d.Update(),
+			model := utils.InteractiveTableModel{
+				Rows:         d.Rows(),
 				Header:       &headers,
 				WidthMap:     map[int]int{0: 30},
 				DataDelegate: &d,
@@ -115,7 +115,7 @@ func (t *torrentSearch) fetchData() (*[]api.Torrent, error) {
 	return &torrentList, nil
 }
 
-func (t *torrentSearch) Update() *[][]string {
+func (t *torrentSearch) Rows() *[][]string {
 	torrentList, err := t.fetchData()
 	if err != nil {
 		return nil

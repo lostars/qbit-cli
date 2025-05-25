@@ -112,7 +112,7 @@ make sure you plugin is valid and enabled`)
 					data = append(data, []string{r.FileName, utils.FormatFileSizeAuto(uint64(r.FileSize), 1),
 						strconv.FormatInt(int64(r.NBSeeders), 10), strconv.FormatInt(int64(r.NBLeechers), 10), r.EngineName})
 				}
-				model := utils.InteractiveModel{
+				model := utils.InteractiveTableModel{
 					Rows:     &data,
 					Header:   &header,
 					WidthMap: map[int]int{0: 50, 1: 10, 2: 10, 3: 10, 4: 20},
@@ -182,6 +182,10 @@ func (j *torrentSearchMsgDelegate) Operation(msg tea.KeyMsg, cursor int) tea.Cmd
 		}
 	}
 	return nil
+}
+
+func (j *torrentSearchMsgDelegate) Desc() string {
+	return "[enter] to download"
 }
 
 func InteractiveDownload(urls []string, savePath, saveCategory, saveTags string, autoMM bool) string {

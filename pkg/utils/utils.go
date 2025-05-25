@@ -79,7 +79,7 @@ func DefaultCellStyle() lipgloss.Style {
 	return lipgloss.NewStyle().PaddingLeft(1).PaddingRight(1).Align(lipgloss.Left)
 }
 
-type InteractiveModel struct {
+type InteractiveTableModel struct {
 	Rows          *[][]string
 	Header        *[]string
 	cursor        int
@@ -99,18 +99,19 @@ type NotifyMsg struct {
 
 type ClearNotifyMsg struct{}
 
-type DateUpdateMsg struct{}
+type RowUpdateMsg struct{}
 
 type InteractiveKeyMsgDelegate interface {
 	Operation(msg tea.KeyMsg, cursor int) tea.Cmd
+	Desc() string
 }
 
 type DynamicDataDelegate interface {
-	Update() *[][]string
+	Rows() *[][]string
 	Frequency() time.Duration
 }
 
-func (m *InteractiveModel) Init() tea.Cmd {
+func (m *InteractiveTableModel) Init() tea.Cmd {
 	if m.Rows == nil {
 		m.Rows = &[][]string{}
 	}
@@ -123,22 +124,22 @@ func (m *InteractiveModel) Init() tea.Cmd {
 	m.clickedMap = make(map[int]bool, len(*m.Rows))
 	if m.DataDelegate != nil {
 		return tea.Tick(m.DataDelegate.Frequency(), func(t time.Time) tea.Msg {
-			return DateUpdateMsg{}
+			return RowUpdateMsg{}
 		})
 	}
 	return nil
 }
 
-func (m *InteractiveModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+func (m *InteractiveTableModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
-	case DateUpdateMsg:
-		data := m.DataDelegate.Update()
+	case RowUpdateMsg:
+		data := m.DataDelegate.Rows()
 		if data == nil {
 			data = &[][]string{}
 		}
 		m.Rows = data
 		return m, tea.Tick(m.DataDelegate.Frequency(), func(t time.Time) tea.Msg {
-			return DateUpdateMsg{}
+			return RowUpdateMsg{}
 		})
 	case ClearNotifyMsg:
 		m.notifyMsg = nil
@@ -183,7 +184,7 @@ func (m *InteractiveModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
-func (m *InteractiveModel) View() string {
+func (m *InteractiveTableModel) View() string {
 	wrap := len(m.WidthMap) <= 0
 	ta := table.New().
 		Border(lipgloss.ASCIIBorder()).
@@ -224,10 +225,15 @@ func (m *InteractiveModel) View() string {
 		ta.Rows(d[i])
 	}
 
+	desc := `[ctrl+q]([q]) to exit; `
+	if m.Delegate != nil {
+		desc += m.Delegate.Desc()
+	}
+
 	if m.notifyMsg != nil {
-		return fmt.Sprintf("%s\n%s\n", ta.String(), m.notifyMsg.Msg)
+		return fmt.Sprintf("%s\n%s\n%s\n", ta.String(), desc, m.notifyMsg.Msg)
 	} else {
-		return fmt.Sprintf("%s\n\n", ta.String())
+		return fmt.Sprintf("%s\n%s\n\n", ta.String(), desc)
 	}
 }
 

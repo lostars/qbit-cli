@@ -122,7 +122,7 @@ make sure you plugin is valid and enabled`)
 						printList,
 					},
 				}
-				if _, e := tea.NewProgram(&model).Run(); e != nil {
+				if _, e := tea.NewProgram(&model, tea.WithAltScreen()).Run(); e != nil {
 					return e
 				}
 			}

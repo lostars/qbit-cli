@@ -117,6 +117,9 @@ func (m *InteractiveModel) Init() tea.Cmd {
 	if m.Header == nil {
 		m.Header = &[]string{}
 	}
+	if m.WidthMap == nil {
+		m.WidthMap = map[int]int{}
+	}
 	m.clickedMap = make(map[int]bool, len(*m.Rows))
 	if m.DataDelegate != nil {
 		return tea.Tick(m.DataDelegate.Frequency(), func(t time.Time) tea.Msg {
@@ -129,9 +132,11 @@ func (m *InteractiveModel) Init() tea.Cmd {
 func (m *InteractiveModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case DateUpdateMsg:
-		if data := m.DataDelegate.Update(); data != nil {
-			m.Rows = m.DataDelegate.Update()
+		data := m.DataDelegate.Update()
+		if data == nil {
+			data = &[][]string{}
 		}
+		m.Rows = data
 		return m, tea.Tick(m.DataDelegate.Frequency(), func(t time.Time) tea.Msg {
 			return DateUpdateMsg{}
 		})
@@ -179,7 +184,7 @@ func (m *InteractiveModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m *InteractiveModel) View() string {
-	wrap := m.WidthMap == nil || len(m.WidthMap) <= 0
+	wrap := len(m.WidthMap) <= 0
 	ta := table.New().
 		Border(lipgloss.ASCIIBorder()).
 		Width(m.width).

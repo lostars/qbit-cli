@@ -7,6 +7,7 @@ import (
 	"github.com/charmbracelet/lipgloss/table"
 	"strconv"
 	"strings"
+	"time"
 	"unicode/utf8"
 )
 
@@ -86,22 +87,48 @@ type InteractiveModel struct {
 	startIndex    int
 	WidthMap      map[int]int
 	Delegate      InteractiveKeyMsgDelegate
+	notifyMsg     *NotifyMsg
+	clickedMap    map[int]bool
 }
+
+type NotifyMsg struct {
+	Msg      string
+	Duration time.Duration
+}
+
+type ClearNotifyMsg struct{}
 
 type InteractiveKeyMsgDelegate interface {
 	Operation(msg tea.KeyMsg, cursor int) tea.Cmd
 }
 
 func (m *InteractiveModel) Init() tea.Cmd {
+	if m.Rows == nil {
+		m.Rows = &[][]string{}
+	}
+	if m.Header == nil {
+		m.Header = &[]string{}
+	}
+	m.clickedMap = make(map[int]bool, len(*m.Rows))
 	return nil
 }
 
 func (m *InteractiveModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
+	case ClearNotifyMsg:
+		m.notifyMsg = nil
+	case NotifyMsg:
+		m.notifyMsg = &msg
+		if m.notifyMsg != nil && m.notifyMsg.Duration != 0 {
+			return m, tea.Tick(m.notifyMsg.Duration, func(t time.Time) tea.Msg {
+				return ClearNotifyMsg{}
+			})
+		}
 	case tea.KeyMsg:
 		switch msg.String() {
 		default:
 			if m.Delegate != nil {
+				m.clickedMap[m.cursor] = true
 				return m, m.Delegate.Operation(msg, m.cursor)
 			}
 		case "up", "k":
@@ -152,6 +179,9 @@ func (m *InteractiveModel) View() string {
 			if dataIndex == m.cursor {
 				return style.Foreground(lipgloss.Color("#000000")).Background(lipgloss.Color("#FFFFFF"))
 			}
+			if m.clickedMap[dataIndex] {
+				return style.Foreground(lipgloss.Color("#383535"))
+			}
 
 			return style
 		}).Wrap(wrap)
@@ -169,7 +199,11 @@ func (m *InteractiveModel) View() string {
 		ta.Rows(d[i])
 	}
 
-	return ta.String() + "\n"
+	if m.notifyMsg != nil {
+		return fmt.Sprintf("%s\n%s\n", ta.String(), m.notifyMsg.Msg)
+	} else {
+		return fmt.Sprintf("%s\n\n", ta.String())
+	}
 }
 
 const (

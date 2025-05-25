@@ -10,6 +10,7 @@ import (
 	"qbit-cli/pkg/utils"
 	"regexp"
 	"strconv"
+	"time"
 )
 
 func JackettSearch() *cobra.Command {
@@ -133,14 +134,17 @@ type jackettMsgDelegate struct {
 func (j *jackettMsgDelegate) Operation(msg tea.KeyMsg, cursor int) tea.Cmd {
 	switch msg.String() {
 	case "enter":
-		if j.data == nil || cursor >= len(j.data) {
+		if j.data == nil {
 			return nil
 		}
 		torrents := j.data[cursor].MagnetUri
 		if torrents == "" {
 			torrents = j.data[cursor].Link
 		}
-		_ = InteractiveDownload([]string{torrents}, j.savePath, j.saveCategory, j.saveTags, j.autoMM)
+		str := InteractiveDownload([]string{torrents}, j.savePath, j.saveCategory, j.saveTags, j.autoMM)
+		return func() tea.Msg {
+			return utils.NotifyMsg{Msg: str, Duration: time.Second}
+		}
 	}
 	return nil
 }

@@ -176,7 +176,10 @@ func (j *torrentSearchMsgDelegate) Operation(msg tea.KeyMsg, cursor int) tea.Cmd
 			return nil
 		}
 		torrents := j.data[cursor].FileURL
-		_ = InteractiveDownload([]string{torrents}, j.savePath, j.saveCategory, j.saveTags, j.autoMM)
+		str := InteractiveDownload([]string{torrents}, j.savePath, j.saveCategory, j.saveTags, j.autoMM)
+		return func() tea.Msg {
+			return utils.NotifyMsg{Msg: str, Duration: time.Second}
+		}
 	}
 	return nil
 }

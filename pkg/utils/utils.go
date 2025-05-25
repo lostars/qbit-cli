@@ -87,6 +87,7 @@ type InteractiveModel struct {
 	startIndex    int
 	WidthMap      map[int]int
 	Delegate      InteractiveKeyMsgDelegate
+	DataDelegate  DynamicDataDelegate
 	notifyMsg     *NotifyMsg
 	clickedMap    map[int]bool
 }
@@ -98,8 +99,15 @@ type NotifyMsg struct {
 
 type ClearNotifyMsg struct{}
 
+type DateUpdateMsg struct{}
+
 type InteractiveKeyMsgDelegate interface {
 	Operation(msg tea.KeyMsg, cursor int) tea.Cmd
+}
+
+type DynamicDataDelegate interface {
+	Update() *[][]string
+	Frequency() time.Duration
 }
 
 func (m *InteractiveModel) Init() tea.Cmd {
@@ -110,11 +118,23 @@ func (m *InteractiveModel) Init() tea.Cmd {
 		m.Header = &[]string{}
 	}
 	m.clickedMap = make(map[int]bool, len(*m.Rows))
+	if m.DataDelegate != nil {
+		return tea.Tick(m.DataDelegate.Frequency(), func(t time.Time) tea.Msg {
+			return DateUpdateMsg{}
+		})
+	}
 	return nil
 }
 
 func (m *InteractiveModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
+	case DateUpdateMsg:
+		if data := m.DataDelegate.Update(); data != nil {
+			m.Rows = m.DataDelegate.Update()
+		}
+		return m, tea.Tick(m.DataDelegate.Frequency(), func(t time.Time) tea.Msg {
+			return DateUpdateMsg{}
+		})
 	case ClearNotifyMsg:
 		m.notifyMsg = nil
 	case NotifyMsg:

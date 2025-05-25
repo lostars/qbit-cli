@@ -2,14 +2,14 @@ package cmd
 
 import (
 	"fmt"
+	tea "github.com/charmbracelet/bubbletea"
 	"github.com/spf13/cobra"
 	"net/url"
 	"qbit-cli/internal/api"
 	"qbit-cli/pkg/utils"
 	"strconv"
+	"time"
 )
-
-//https://github.com/qbittorrent/qBittorrent/wiki/WebUI-API-(qBittorrent-5.0)#get-torrent-list
 
 func TorrentList() *cobra.Command {
 	listCmd := &cobra.Command{
@@ -21,6 +21,7 @@ func TorrentList() *cobra.Command {
 	var (
 		state, category, hashes, tag string
 		limit, offset                uint32
+		interactive                  bool
 	)
 
 	listCmd.Flags().StringVar(&state, "state", "", `state filter:
@@ -31,40 +32,41 @@ stalled, stalled_uploading, stalled_downloading, errored`)
 	listCmd.Flags().StringVar(&hashes, "hashes", "", "hash filter separated by |")
 	listCmd.Flags().Uint32Var(&limit, "limit", 0, "results limit")
 	listCmd.Flags().Uint32Var(&offset, "offset", 0, "results offset")
+	listCmd.Flags().BoolVarP(&interactive, "interactive", "i", false, "interactive mode")
 
 	listCmd.RunE = func(cmd *cobra.Command, args []string) error {
-		var params = url.Values{}
-		if state != "" {
-			params.Set("filter", state)
+		d := torrentSearch{
+			state:    state,
+			category: category,
+			hashes:   hashes,
+			tag:      tag,
+			limit:    limit,
+			offset:   offset,
 		}
-		if category != "" {
-			// category must be encoded
-			params.Set("category", category)
-		}
-		if tag != "" {
-			// tag must be encoded
-			params.Set("tag", tag)
-		}
-		if hashes != "" {
-			params.Set("hashes", hashes)
-		}
-		if limit > 0 {
-			params.Set("limit", strconv.FormatUint(uint64(limit), 10))
-		}
-		if offset > 0 {
-			params.Set("offset", strconv.FormatUint(uint64(offset), 10))
+		if interactive {
+			headers := []string{"name", "hash", "category", "tags", "state", "progress", "DOWN", "UP"}
+			model := utils.InteractiveModel{
+				Rows:         d.Update(),
+				Header:       &headers,
+				WidthMap:     map[int]int{0: 30},
+				DataDelegate: &d,
+			}
+			if _, e := tea.NewProgram(&model).Run(); e != nil {
+				return e
+			}
+			return nil
 		}
 
-		torrentList, err := api.TorrentList(params)
+		torrentList, err := d.fetchData()
 		if err != nil {
 			return err
 		}
 
-		fmt.Printf("total size: %d\n", len(torrentList))
+		fmt.Printf("total size: %d\n", len(*torrentList))
 
 		headers := []string{"name", "hash", "category", "tags", "state", "progress"}
-		var data = make([][]string, len(torrentList))
-		for i, t := range torrentList {
+		var data = make([][]string, len(*torrentList))
+		for i, t := range *torrentList {
 			data[i] = []string{t.Name, t.Hash, t.Category, t.Tags, t.State, utils.FormatPercent(t.Progress)}
 		}
 		utils.PrintListWithColWidth(headers, &data, map[int]int{0: 30}, false)
@@ -72,4 +74,57 @@ stalled, stalled_uploading, stalled_downloading, errored`)
 	}
 
 	return listCmd
+}
+
+type torrentSearch struct {
+	state, category, tag, hashes string
+	limit, offset                uint32
+}
+
+func (t *torrentSearch) Frequency() time.Duration {
+	return time.Second
+}
+
+func (t *torrentSearch) fetchData() (*[]api.Torrent, error) {
+	var params = url.Values{}
+	if t.state != "" {
+		params.Set("filter", t.state)
+	}
+	if t.category != "" {
+		// category must be encoded
+		params.Set("category", t.category)
+	}
+	if t.tag != "" {
+		// tag must be encoded
+		params.Set("tag", t.tag)
+	}
+	if t.hashes != "" {
+		params.Set("hashes", t.hashes)
+	}
+	if t.limit > 0 {
+		params.Set("limit", strconv.FormatUint(uint64(t.limit), 10))
+	}
+	if t.offset > 0 {
+		params.Set("offset", strconv.FormatUint(uint64(t.offset), 10))
+	}
+
+	torrentList, err := api.TorrentList(params)
+	if err != nil {
+		return nil, err
+	}
+	return &torrentList, nil
+}
+
+func (t *torrentSearch) Update() *[][]string {
+	torrentList, err := t.fetchData()
+	if err != nil {
+		return nil
+	}
+	var data = make([][]string, len(*torrentList))
+	for i, t := range *torrentList {
+		dl := utils.FormatFileSizeAuto(uint64(t.DLSpeed), 1) + "/S"
+		up := utils.FormatFileSizeAuto(uint64(t.UPSpeed), 1) + "/S"
+		data[i] = []string{t.Name, t.Hash, t.Category, t.Tags, t.State, utils.FormatPercent(t.Progress), dl, up}
+	}
+	return &data
 }

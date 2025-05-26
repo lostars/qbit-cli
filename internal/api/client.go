@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"mime/multipart"
 	"net/http"
 	"net/url"
@@ -105,6 +106,7 @@ func (c *JackettClient) Get(endpoint string, params url.Values) (*http.Response,
 	params.Set("apikey", c.Config.Jackett.ApiKey)
 	fullUrl := c.Config.Jackett.Host + endpoint
 	fullUrl += "?" + params.Encode()
+	log.Println(fullUrl)
 
 	req, err := http.NewRequest(http.MethodGet, fullUrl, nil)
 	if err != nil {
@@ -168,6 +170,7 @@ func (c *EmbyClient) Get(endpoint string, params url.Values) (*http.Response, er
 	if len(params) > 0 {
 		fullUrl += "?" + params.Encode()
 	}
+	log.Println(fullUrl + "&X-Emby-Token=" + c.embyApiKey())
 
 	req, err := http.NewRequest(http.MethodGet, fullUrl, nil)
 	if err != nil {
@@ -213,6 +216,7 @@ func (c *QbitClient) Get(endpoint string, params url.Values) (*http.Response, er
 	if params != nil && len(params) > 0 {
 		fullUrl += "?" + params.Encode()
 	}
+	log.Println(fullUrl)
 
 	req, err := http.NewRequest(http.MethodGet, fullUrl, nil)
 	if err != nil {

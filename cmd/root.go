@@ -3,11 +3,16 @@ package cmd
 import (
 	"fmt"
 	"github.com/spf13/cobra"
+	"io"
+	"log"
 	"os"
 	"qbit-cli/internal/config"
 )
 
 func Execute(version string) {
+	var (
+		showVersion, debugMode bool
+	)
 
 	rootCmd := &cobra.Command{
 		Use:   "qbit",
@@ -23,14 +28,21 @@ Default config location:
 same as executable file named config.yaml
 `,
 		SilenceUsage: true,
+		PersistentPreRun: func(cmd *cobra.Command, args []string) {
+			if debugMode {
+				log.SetFlags(log.LstdFlags | log.Lshortfile)
+				log.Println("Debug mode is ON")
+			} else {
+				log.SetFlags(0)
+				log.SetOutput(io.Discard)
+			}
+			return
+		},
 	}
-
-	var (
-		showVersion bool
-	)
 
 	rootCmd.PersistentFlags().StringVarP(&config.CfgPath, "config", "c", "", "qbit config file path")
 	rootCmd.Flags().BoolVarP(&showVersion, "version", "v", false, "qbit cli version")
+	rootCmd.PersistentFlags().BoolVarP(&debugMode, "debug", "d", false, "enable debug")
 
 	rootCmd.RunE = func(cmd *cobra.Command, args []string) error {
 		if showVersion {

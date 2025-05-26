@@ -7,7 +7,7 @@ import (
 
 type EmbyItems struct {
 	Items            []EmbyItem `json:"Items"`
-	TotalRecordCount int        `json:"TotalRecordCount"`
+	TotalRecordCount int        `json:"TotalRecordCount"` // do not use, may return 0 even items is not empty
 }
 
 type EmbyItem struct {

@@ -30,8 +30,8 @@ same as executable file named config.yaml
 		SilenceUsage: true,
 		PersistentPreRun: func(cmd *cobra.Command, args []string) {
 			if debugMode {
+				config.Debug = true
 				log.SetFlags(log.LstdFlags | log.Lshortfile)
-				log.Println("Debug mode is ON")
 			} else {
 				log.SetFlags(0)
 				log.SetOutput(io.Discard)

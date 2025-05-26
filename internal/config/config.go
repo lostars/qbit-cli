@@ -9,6 +9,7 @@ import (
 var (
 	CfgPath string
 	config  *Config
+	Debug   bool
 )
 
 type Config struct {

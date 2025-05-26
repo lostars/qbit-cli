@@ -206,6 +206,9 @@ func ItemInfo() *cobra.Command {
 		if item.IsTVShowCollection() {
 			childrenType = "Series"
 		}
+		if item.IsLiveTV() {
+			childrenType = "TvChannel"
+		}
 
 		utils.PrintListWithColWidth(header, &data, map[int]int{2: 30}, false)
 

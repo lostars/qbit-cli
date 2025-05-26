@@ -60,6 +60,9 @@ func (item *EmbyItem) IsMovieCollection() bool {
 func (item *EmbyItem) IsTVShowCollection() bool {
 	return item.CollectionType == "tvshows"
 }
+func (item *EmbyItem) IsLiveTV() bool {
+	return item.CollectionType == "livetv"
+}
 
 type EmbyMediaSource struct {
 	ID           string         `json:"Id"`

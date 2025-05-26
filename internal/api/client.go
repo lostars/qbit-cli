@@ -170,7 +170,15 @@ func (c *EmbyClient) Get(endpoint string, params url.Values) (*http.Response, er
 	if len(params) > 0 {
 		fullUrl += "?" + params.Encode()
 	}
-	log.Println(fullUrl + "&X-Emby-Token=" + c.embyApiKey())
+	if config.Debug {
+		token := ""
+		if len(params) > 0 {
+			token = "&X-Emby-Token=" + c.embyApiKey()
+		} else {
+			token = "?X-Emby-Token=" + c.embyApiKey()
+		}
+		log.Println(fullUrl + token)
+	}
 
 	req, err := http.NewRequest(http.MethodGet, fullUrl, nil)
 	if err != nil {

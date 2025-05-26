@@ -42,7 +42,7 @@ func ItemList() *cobra.Command {
 	}
 
 	var (
-		includeItemTypes                    string
+		includeItemTypes, excludeItemTypes  string
 		searchTerm                          string
 		genreIds                            string
 		sortBy, sortOrder                   string
@@ -58,6 +58,7 @@ PremiereDate, ProductionYear, SortName, Random, Revenue, Runtime`)
 	cmd.Flags().StringVar(&includeItemTypes, "include-item-types", "", `Comma separated list of item types:
 Movie,Series,Video,Game,MusicAlbum,Genres
 You may find all types here: https://dev.emby.media/doc/restapi/Item-Types.html`)
+	cmd.Flags().StringVar(&excludeItemTypes, "exclude-item-types", "", "exclude item types, same as include-item-types")
 	cmd.Flags().StringVar(&searchTerm, "search-term", "", "keywords")
 	cmd.Flags().IntVar(&limit, "limit", 50, "results limit")
 	cmd.Flags().IntVar(&minWidth, "min-width", 0, "item min width")
@@ -78,6 +79,10 @@ You may find all types here: https://dev.emby.media/doc/restapi/Item-Types.html`
 		if includeItemTypes != "" {
 			params.Add("Recursive", "true")
 			params.Add("IncludeItemTypes", includeItemTypes)
+		}
+		if excludeItemTypes != "" {
+			params.Add("ExcludeItemTypes", excludeItemTypes)
+			params.Add("Recursive", "true")
 		}
 		if searchTerm != "" {
 			params.Add("SearchTerm", searchTerm)
@@ -122,7 +127,11 @@ You may find all types here: https://dev.emby.media/doc/restapi/Item-Types.html`
 			if !item.CreatedDate.IsZero() {
 				create = item.CreatedDate.Format("2006-01-02")
 			}
-			data[i] = []string{item.ID, item.Name, item.Type, strconv.Itoa(item.IndexNumber), create}
+			idx := ""
+			if item.IndexNumber > 0 {
+				idx = strconv.Itoa(item.IndexNumber)
+			}
+			data[i] = []string{item.ID, item.Name, item.Type, idx, create}
 		}
 		utils.PrintListWithColWidth(headers, &data, map[int]int{1: 50}, false)
 
@@ -145,10 +154,13 @@ func ItemInfo() *cobra.Command {
 	}
 
 	var (
-		showSourceList, showStreamList bool
+		showSourceList, showStreamList, getChildren bool
+		childrenLimit                               int
 	)
 	cmd.Flags().BoolVar(&showSourceList, "source", false, "whether to show media source list")
 	cmd.Flags().BoolVar(&showStreamList, "stream", false, "whether to show media stream list")
+	cmd.Flags().BoolVar(&getChildren, "children", false, "whether to show children items")
+	cmd.Flags().IntVar(&childrenLimit, "children-limit", 100, "limit number of children")
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		item, err := emby.Item(args[0])
@@ -165,24 +177,48 @@ func ItemInfo() *cobra.Command {
 		data[0] = []string{item.ID, item.ParentId, item.Name, item.Type, premiereDate, item.Path}
 
 		genres := strings.Join(item.Genres, ",")
-		if item.Type == "Movie" {
+		childrenType := ""
+		if item.IsMovie() {
 			header = append(header, "Genres")
 			data[0] = append(data[0], genres)
 		}
-		if item.Type == "Series" {
+		if item.IsSeries() {
 			header = append(header, "Genres", "Seasons")
 			data[0] = append(data[0], genres, strconv.Itoa(item.ChildCount))
+			childrenType = "Season"
 		}
-		if item.Type == "Season" {
+		if item.IsSeason() {
 			header = append(header, "Episodes")
 			data[0] = append(data[0], strconv.Itoa(item.ChildCount))
+			childrenType = "Episode"
 		}
-		if item.Type == "MusicAlbum" {
+		if item.IsMusicAlbum() {
 			header = append(header, "Genres", "AlbumArtist")
 			data[0] = append(data[0], genres, item.AlbumArtist)
+			childrenType = "Audio"
+		}
+		if item.IsMusicCollection() {
+			childrenType = "MusicAlbum"
+		}
+		if item.IsMovieCollection() {
+			childrenType = "Movie"
+		}
+		if item.IsTVShowCollection() {
+			childrenType = "Series"
 		}
 
 		utils.PrintListWithColWidth(header, &data, map[int]int{2: 30}, false)
+
+		if getChildren {
+			subCmd := ItemList()
+			_ = subCmd.Flags().Set("parent-id", item.ID)
+			_ = subCmd.Flags().Set("limit", strconv.Itoa(childrenLimit))
+			if childrenType != "" {
+				_ = subCmd.Flags().Set("include-item-types", childrenType)
+			}
+			subCmd.SetArgs([]string{})
+			_ = subCmd.Execute()
+		}
 
 		if showSourceList {
 			showSources(&item.MediaSources)

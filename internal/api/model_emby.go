@@ -39,6 +39,28 @@ type EmbyItem struct {
 	Overview string `json:"Overview"`
 }
 
+func (item *EmbyItem) IsMovie() bool {
+	return item.Type == "Movie"
+}
+func (item *EmbyItem) IsSeries() bool {
+	return item.Type == "Series"
+}
+func (item *EmbyItem) IsSeason() bool {
+	return item.Type == "Season"
+}
+func (item *EmbyItem) IsMusicAlbum() bool {
+	return item.Type == "MusicAlbum"
+}
+func (item *EmbyItem) IsMusicCollection() bool {
+	return item.CollectionType == "music"
+}
+func (item *EmbyItem) IsMovieCollection() bool {
+	return item.CollectionType == "movies"
+}
+func (item *EmbyItem) IsTVShowCollection() bool {
+	return item.CollectionType == "tvshows"
+}
+
 type EmbyMediaSource struct {
 	ID           string         `json:"Id"`
 	Path         string         `json:"Path"`

@@ -180,9 +180,6 @@ func (c *EmbyClient) Get(endpoint string, params url.Values) (*http.Response, er
 	if err != nil {
 		return nil, err
 	}
-	if resp.StatusCode != http.StatusOK {
-		return resp, &HTTPClientError{resp.Status, fullUrl, nil}
-	}
 	return resp, nil
 }
 

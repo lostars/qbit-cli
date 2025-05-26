@@ -12,11 +12,31 @@ type EmbyItems struct {
 
 type EmbyItem struct {
 	ID             string            `json:"Id"`
+	ParentId       string            `json:"ParentId"`
+	SeriesId       string            `json:"SeriesId"`
+	SeriesName     string            `json:"SeriesName"`
+	ChildCount     int               `json:"ChildCount"`
+	Status         string            `json:"Status"`
+	SeasonId       string            `json:"SeasonId"`
+	SeasonName     string            `json:"SeasonName"`
+	Album          string            `json:"Album"`
+	AlbumId        string            `json:"AlbumId"`
+	AlbumArtist    string            `json:"AlbumArtist"`
+	IndexNumber    int               `json:"IndexNumber"`
 	Name           string            `json:"Name"`
 	Type           string            `json:"Type"`
+	Path           string            `json:"Path"`
+	Genres         []string          `json:"Genres"`
 	ProductionYear int               `json:"ProductionYear"`
 	PremiereDate   time.Time         `json:"PremiereDate"`
+	CreatedDate    time.Time         `json:"DateCreated"`
 	MediaSources   []EmbyMediaSource `json:"MediaSources"`
+	CollectionType string            `json:"CollectionType"`
+	ImageTags      struct {
+		Primary string `json:"Primary"`
+		Logo    string `json:"Logo"`
+	} `json:"ImageTags"`
+	Overview string `json:"Overview"`
 }
 
 type EmbyMediaSource struct {

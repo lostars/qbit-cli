@@ -9,6 +9,7 @@ import (
 	"qbit-cli/internal/api/emby"
 	"qbit-cli/pkg/utils"
 	"strconv"
+	"strings"
 )
 
 func EmbyCmd() *cobra.Command {
@@ -46,6 +47,7 @@ func ItemList() *cobra.Command {
 		genreIds                            string
 		sortBy, sortOrder                   string
 		limit, minWidth, maxWidth, parentId int
+		hasOverview                         int
 	)
 
 	cmd.Flags().StringVar(&sortBy, "sort-by", "", `Options: Album, AlbumArtist, Artist, Budget, 
@@ -61,11 +63,17 @@ You may find all types here: https://dev.emby.media/doc/restapi/Item-Types.html`
 	cmd.Flags().IntVar(&minWidth, "min-width", 0, "item min width")
 	cmd.Flags().IntVar(&maxWidth, "max-width", 0, "item max width")
 	cmd.Flags().IntVar(&parentId, "parent-id", 0, "parent id")
+	cmd.Flags().IntVar(&hasOverview, "has-overview", -1, "has overview: 1 for yes, 0 for no")
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		params := url.Values{
 			"Limit":  []string{strconv.FormatInt(int64(limit), 10)},
-			"Fields": []string{"PremiereDate", "ProductionYear"},
+			"Fields": []string{"PremiereDate", "ProductionYear", "Overview", "DateCreated"},
+		}
+		if hasOverview == 1 {
+			params.Add("HasOverview", "true")
+		} else if hasOverview == 0 {
+			params.Add("HasOverview", "false")
 		}
 		if includeItemTypes != "" {
 			params.Add("Recursive", "true")
@@ -102,15 +110,19 @@ You may find all types here: https://dev.emby.media/doc/restapi/Item-Types.html`
 			return nil
 		}
 
-		fmt.Printf("total items: %d\n", len(items.Items))
-		headers := []string{"ID", "Name", "Type", "PremiereDate"}
+		size := items.TotalRecordCount
+		if size <= 0 {
+			size = len(items.Items)
+		}
+		fmt.Printf("total items: %d\n", size)
+		headers := []string{"ID", "Name", "Type", "IDX", "Created"}
 		var data = make([][]string, len(items.Items))
 		for i, item := range items.Items {
-			year := ""
-			if !item.PremiereDate.IsZero() {
-				year = item.PremiereDate.Format("2006-01-02")
+			create := ""
+			if !item.CreatedDate.IsZero() {
+				create = item.CreatedDate.Format("2006-01-02")
 			}
-			data[i] = []string{item.ID, item.Name, item.Type, year}
+			data[i] = []string{item.ID, item.Name, item.Type, strconv.Itoa(item.IndexNumber), create}
 		}
 		utils.PrintListWithColWidth(headers, &data, map[int]int{1: 50}, false)
 
@@ -144,34 +156,33 @@ func ItemInfo() *cobra.Command {
 			return err
 		}
 
-		var s []string
-		streams := item.MediaVideoStream()
-		video := "-"
-		if streams != nil && len(*streams) > 0 {
-			for _, stream := range *streams {
-				s = append(s, stream.DisplayTitle)
-			}
-			video = fmt.Sprintf("%v", s)
-		}
-
-		sourceStr := "-"
-		if sources := item.MediaVideoSourceSizeView(); sources != nil && len(sources) > 0 {
-			sourceStr = strconv.FormatInt(int64(item.MediaVideoSourceCount()), 10)
-		}
-
-		size := "-"
-		if s := item.MediaVideoSourceSizeView(); s != nil && len(s) > 0 {
-			size = fmt.Sprintf("%v", s)
-		}
-
-		header := []string{"ID", "Name", "Type", "Video", "FileCount", "FileSize", "PremiereDate"}
+		header := []string{"ID", "ParentId", "Name", "Type", "PremiereDate", "Path"}
 		var data = make([][]string, 1)
-		year := ""
+		premiereDate := ""
 		if !item.PremiereDate.IsZero() {
-			year = item.PremiereDate.Format("2006-01-02")
+			premiereDate = item.PremiereDate.Format("2006-01-02")
 		}
-		data[0] = []string{item.ID, item.Name, item.Type, video, sourceStr, size, year}
-		utils.PrintListWithColWidth(header, &data, map[int]int{1: 50}, false)
+		data[0] = []string{item.ID, item.ParentId, item.Name, item.Type, premiereDate, item.Path}
+
+		genres := strings.Join(item.Genres, ",")
+		if item.Type == "Movie" {
+			header = append(header, "Genres")
+			data[0] = append(data[0], genres)
+		}
+		if item.Type == "Series" {
+			header = append(header, "Genres", "Seasons")
+			data[0] = append(data[0], genres, strconv.Itoa(item.ChildCount))
+		}
+		if item.Type == "Season" {
+			header = append(header, "Episodes")
+			data[0] = append(data[0], strconv.Itoa(item.ChildCount))
+		}
+		if item.Type == "MusicAlbum" {
+			header = append(header, "Genres", "AlbumArtist")
+			data[0] = append(data[0], genres, item.AlbumArtist)
+		}
+
+		utils.PrintListWithColWidth(header, &data, map[int]int{2: 30}, false)
 
 		if showSourceList {
 			showSources(&item.MediaSources)
@@ -191,6 +202,9 @@ func showSources(sources *[]api.EmbyMediaSource) {
 		return
 	}
 	fmt.Println("media source list:")
+	if len(*sources) == 0 {
+		return
+	}
 	headers := []string{"ID", "Path", "Size"}
 	data := make([][]string, len(*sources))
 	for i, source := range *sources {
@@ -204,6 +218,9 @@ func showStreams(sources *[]api.EmbyMediaSource) {
 		return
 	}
 	fmt.Println("media streams list:")
+	if len(*sources) == 0 {
+		return
+	}
 	headers := []string{"ID", "Index", "Type", "DisplayTitle"}
 	data := make([][]string, 0, len(*sources)*2)
 	for _, source := range *sources {

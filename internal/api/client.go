@@ -165,7 +165,9 @@ func (c *EmbyClient) Get(endpoint string, params url.Values) (*http.Response, er
 	if params == nil {
 		params = url.Values{}
 	}
-	fullUrl += "?" + params.Encode()
+	if len(params) > 0 {
+		fullUrl += "?" + params.Encode()
+	}
 
 	req, err := http.NewRequest(http.MethodGet, fullUrl, nil)
 	if err != nil {

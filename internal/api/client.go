@@ -184,13 +184,34 @@ func (c *EmbyClient) Get(endpoint string, params url.Values) (*http.Response, er
 	if err != nil {
 		return nil, &HTTPClientError{"Get", fullUrl, err}
 	}
-	req.Header.Set("X-Emby-Token", c.embyApiKey())
-	req.Header.Set("X-Emby-Client", "qbit-cli")
-	req.Header.Set("X-Emby-Device-Name", "qbit-cli")
+	c.embyAuth(req)
 	resp, err := c.Client.Do(req)
 	if err != nil {
 		return nil, err
 	}
+	return resp, nil
+}
+
+func (c *EmbyClient) embyAuth(req *http.Request) {
+	req.Header.Set("X-Emby-Token", c.embyApiKey())
+	req.Header.Set("X-Emby-Client", "qbit-cli")
+	req.Header.Set("X-Emby-Device-Name", "qbit-cli")
+}
+
+func (c *EmbyClient) Post(endpoint string, params url.Values) (*http.Response, error) {
+	fullUrl := c.embyHost() + endpoint
+	req, err := http.NewRequest(http.MethodPost, fullUrl, strings.NewReader(params.Encode()))
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	c.embyAuth(req)
+	resp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, &HTTPClientError{"Post", fullUrl, err}
+	}
+
 	return resp, nil
 }
 

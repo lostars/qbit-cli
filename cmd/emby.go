@@ -31,6 +31,52 @@ func ItemCmd() *cobra.Command {
 
 	cmd.AddCommand(ItemList())
 	cmd.AddCommand(ItemInfo())
+	cmd.AddCommand(ItemRefreshCommand())
+
+	return cmd
+}
+
+func ItemRefreshCommand() *cobra.Command {
+	var cmd = &cobra.Command{
+		Use:   "refresh <item>...",
+		Short: "Refresh items",
+		Args: func(cmd *cobra.Command, args []string) error {
+			if len(args) < 1 {
+				return errors.New("requires item id")
+			}
+			return nil
+		},
+	}
+
+	var (
+		recursive                             bool
+		metadataRefreshMode, imageRefreshMode string
+		replaceAllMetadata, replaceAllImages  bool
+	)
+
+	cmd.Flags().BoolVar(&recursive, "recursive", true, "Indicates if the refresh should occur recursively.")
+	cmd.Flags().StringVar(&imageRefreshMode, "image-refresh-mode", "FullRefresh", "image refresh mode: FullRefresh|Default|ValidationOnly")
+	cmd.Flags().StringVar(&metadataRefreshMode, "metadata-refresh-mode", "FullRefresh", "metadata refresh mode: FullRefresh|Default|ValidationOnly")
+	cmd.Flags().BoolVar(&replaceAllMetadata, "replace-all-metadata", false, "Determines if metadata should be replaced. Only applicable if mode is FullRefresh")
+	cmd.Flags().BoolVar(&replaceAllImages, "replace-all-images", false, "Determines if images should be replaced. Only applicable if mode is FullRefresh")
+
+	cmd.RunE = func(cmd *cobra.Command, args []string) error {
+		params := url.Values{
+			"Recursive":           {strconv.FormatBool(recursive)},
+			"MetadataRefreshMode": {metadataRefreshMode},
+			"ImageRefreshMode":    {imageRefreshMode},
+			"ReplaceAllMetadata":  {strconv.FormatBool(replaceAllMetadata)},
+			"ReplaceAllImages":    {strconv.FormatBool(replaceAllImages)},
+		}
+		for _, arg := range args {
+			err := emby.RefreshItem(arg, params)
+			if err != nil {
+				fmt.Printf("%s refresh failed: %s\n", arg, err)
+			}
+		}
+
+		return nil
+	}
 
 	return cmd
 }

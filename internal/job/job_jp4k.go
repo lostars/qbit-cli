@@ -1,10 +1,11 @@
-package emby
+package job
 
 import (
 	"fmt"
 	"github.com/spf13/cobra"
 	"net/url"
 	"qbit-cli/internal/api"
+	"qbit-cli/internal/api/emby"
 	"qbit-cli/internal/config"
 	"strconv"
 	"time"
@@ -75,7 +76,7 @@ func (j *JP4K) RunCommand() *cobra.Command {
 		data := make([]*api.SearchDetail, 0, len(items)*2)
 		for _, item := range items {
 			// parse code from name
-			matches := api.JPCodeRegex.FindStringSubmatch(item.Name)
+			matches := JPCodeRegex.FindStringSubmatch(item.Name)
 			if len(matches) < 2 {
 				continue
 			}
@@ -101,7 +102,7 @@ func (j *JP4K) RunCommand() *cobra.Command {
 			}
 
 			for _, r := range results {
-				if api.JP4KRegex.MatchString(r.FileName) {
+				if JP4KRegex.MatchString(r.FileName) {
 					data = append(data, r)
 				}
 			}
@@ -133,14 +134,14 @@ func fourKItems(searchParams url.Values) []*api.EmbyItem {
 		"IncludeItemTypes": {"genre"},
 		"Recursive":        {"true"},
 	}
-	tags, err := Items(tagParams)
+	tags, err := emby.Items(tagParams)
 	if err != nil {
 		return nil
 	}
 	tag := tags.Items[0].ID
 	searchParams.Add("GenreIds", tag)
 
-	items, err := Items(searchParams)
+	items, err := emby.Items(searchParams)
 	if err != nil {
 		return nil
 	}

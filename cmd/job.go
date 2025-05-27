@@ -5,6 +5,7 @@ import (
 	"github.com/spf13/cobra"
 	"qbit-cli/internal/api"
 	"qbit-cli/pkg/utils"
+	"sort"
 )
 
 func JobCmd() *cobra.Command {
@@ -30,6 +31,9 @@ func JobList() *cobra.Command {
 		jobs := api.ListJobs()
 		header := []string{"name", "tags", "description"}
 		data := make([][]string, len(jobs))
+		sort.Slice(jobs, func(i, j int) bool {
+			return jobs[i].JobName() < jobs[j].JobName()
+		})
 		for _, v := range jobs {
 			description := ""
 			if d, ok := v.(api.Description); ok {

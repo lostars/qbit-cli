@@ -1,10 +1,11 @@
-package api
+package job
 
 import (
 	"fmt"
 	"github.com/spf13/cobra"
 	"net/url"
 	"path/filepath"
+	"qbit-cli/internal/api"
 	"regexp"
 	"strings"
 	"time"
@@ -31,7 +32,7 @@ func (_ *RenameJP) Tags() []string {
 }
 
 func init() {
-	RegisterJob(&RenameJP{})
+	api.RegisterJob(&RenameJP{})
 }
 
 func (r *RenameJP) RunCommand() *cobra.Command {
@@ -70,7 +71,7 @@ running, stalled, stalled_uploading, stalled_downloading, errored`)
 			params.Set("category", category)
 		}
 
-		torrentList, err := TorrentList(params)
+		torrentList, err := api.TorrentList(params)
 		if err != nil {
 			return err
 		}
@@ -78,7 +79,7 @@ running, stalled, stalled_uploading, stalled_downloading, errored`)
 		fmt.Printf("total size: %d\n", len(torrentList))
 		for _, t := range torrentList {
 			// get torrent files
-			fileList, err := TorrentFiles(url.Values{"hash": {t.Hash}})
+			fileList, err := api.TorrentFiles(url.Values{"hash": {t.Hash}})
 			if fileList == nil {
 				fmt.Println(err.Error())
 				continue
@@ -99,7 +100,7 @@ running, stalled, stalled_uploading, stalled_downloading, errored`)
 					}
 					rename(renameTorrent, t, jpCode)
 					if newPath := jpCode + filepath.Ext(files[0]); newPath != files[0] {
-						if err := TorrentRenameFile(t.Hash, file.Name, newPath); err != nil {
+						if err := api.TorrentRenameFile(t.Hash, file.Name, newPath); err != nil {
 							fmt.Printf("hash:[%s] new path: %s rename file failed: %v\n", t.Hash, newPath, err)
 						}
 						rename(renameTorrent, t, jpCode)
@@ -114,7 +115,7 @@ running, stalled, stalled_uploading, stalled_downloading, errored`)
 					sleep := false
 					if newFolder != files[0] {
 						sleep = true
-						if err := TorrentRenameFolder(t.Hash, files[0], newFolder); err != nil {
+						if err := api.TorrentRenameFolder(t.Hash, files[0], newFolder); err != nil {
 							fmt.Printf("[%s] %s -> %s renameFolder failed\n", t.Hash, files[0], newFolder)
 						}
 					}
@@ -124,7 +125,7 @@ running, stalled, stalled_uploading, stalled_downloading, errored`)
 						if sleep {
 							time.Sleep(500 * time.Millisecond)
 						}
-						if err := TorrentRenameFile(t.Hash, oldPath, newPath); err != nil {
+						if err := api.TorrentRenameFile(t.Hash, oldPath, newPath); err != nil {
 							fmt.Printf("[%s] %s -> %s renameFile failed: %s\n", t.Hash, oldPath, newPath, err)
 						}
 					}
@@ -138,11 +139,11 @@ running, stalled, stalled_uploading, stalled_downloading, errored`)
 	return jp
 }
 
-func rename(rename bool, t Torrent, name string) {
+func rename(rename bool, t api.Torrent, name string) {
 	if !rename || t.Name == name {
 		return
 	}
-	err := RenameTorrent(t.Hash, name)
+	err := api.RenameTorrent(t.Hash, name)
 	if err != nil {
 		fmt.Printf("%s rename failed: %v\n", t.Hash, err)
 	}

@@ -119,12 +119,13 @@ running, stalled, stalled_uploading, stalled_downloading, errored`)
 						}
 					}
 					newPath := newFolder + "/" + parseJPName(files[1], files[0]) + filepath.Ext(files[1])
-					if newPath != file.Name {
+					oldPath := newFolder + "/" + files[1]
+					if newPath != oldPath {
 						if sleep {
 							time.Sleep(500 * time.Millisecond)
 						}
-						if err := TorrentRenameFile(t.Hash, file.Name, newPath); err != nil {
-							fmt.Printf("[%s] %s -> %s renameFile failed\n", t.Hash, file.Name, newPath)
+						if err := TorrentRenameFile(t.Hash, oldPath, newPath); err != nil {
+							fmt.Printf("[%s] %s -> %s renameFile failed: %s\n", t.Hash, oldPath, newPath, err)
 						}
 					}
 				}

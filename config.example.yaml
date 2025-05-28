@@ -14,3 +14,4 @@ emby:
   host: ""
   api-key: ""
   user: ""
+netease_music_cookie: ""

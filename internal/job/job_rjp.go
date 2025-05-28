@@ -19,7 +19,7 @@ func (r *RenameJP) JobName() string {
 
 func (r *RenameJP) Description() string {
 	return `You may use [flags] to filter you JP torrents.
-Only support torrent that contains one single jp video code.
+Only support torrent that contains one single jp video.
 Only rename files those are selected to download.
 Torrent file struct supported as follows(file extension not mattered):
 a.mp4

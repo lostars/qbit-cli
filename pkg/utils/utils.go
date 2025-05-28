@@ -1,15 +1,137 @@
 package utils
 
 import (
+	"bytes"
+	"crypto/aes"
+	"crypto/cipher"
+	"crypto/md5"
+	"encoding/hex"
 	"fmt"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/charmbracelet/lipgloss/table"
+	"io"
+	"log"
+	"net/http"
+	"os"
+	"os/exec"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
 	"unicode/utf8"
 )
+
+func FFMPEGRun(cmd string, args []string) error {
+	if cmd == "" {
+		_, err := exec.Command("ffmpeg", "-version").CombinedOutput()
+		if err != nil {
+			return nil
+		}
+		cmd = "ffmpeg"
+	}
+	_, err := exec.Command(cmd, args...).CombinedOutput()
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func ReplaceExt(file, newExt string) string {
+	return strings.TrimSuffix(file, filepath.Ext(file)) + "." + newExt
+}
+
+func SaveStringToFile(path, content string) error {
+	out, err := os.Create(path)
+	if err != nil {
+		log.Println(err)
+		return err
+	}
+	defer out.Close()
+	_, err = io.Copy(out, strings.NewReader(content))
+	if err != nil {
+		log.Println(err)
+		return err
+	}
+	return nil
+}
+
+func DownloadUrlToFile(file, url string) error {
+	resp, err := http.Get(url)
+	if err != nil {
+		log.Println(err)
+		return err
+	}
+	defer resp.Body.Close()
+	out, err := os.Create(file)
+	if err != nil {
+		log.Println(err)
+		return err
+	}
+	defer out.Close()
+	_, err = io.Copy(out, resp.Body)
+	if err != nil {
+		log.Println(err)
+		return err
+	}
+	return nil
+}
+
+func FileExists(path string) bool {
+	_, err := os.Stat(path)
+	return err == nil || os.IsExist(err)
+}
+
+func MD5Hex(text string) string {
+	sum := md5.Sum([]byte(text))
+	return hex.EncodeToString(sum[:])
+}
+
+type EncryptPadding interface {
+	Padding() []byte
+}
+
+type ECBEncryptPKCS7 struct {
+	Data  []byte
+	Block cipher.Block
+}
+
+func (p *ECBEncryptPKCS7) Padding() []byte {
+	padding := p.BlockSize() - len(p.Data)%p.BlockSize()
+	t := bytes.Repeat([]byte{byte(padding)}, padding)
+	return append(p.Data, t...)
+}
+
+func (p *ECBEncryptPKCS7) BlockSize() int { return p.Block.BlockSize() }
+
+func (p *ECBEncryptPKCS7) CryptBlocks(dst, src []byte) {
+	if len(src)%p.BlockSize() != 0 {
+		panic("crypto/cipher: input not full blocks")
+	}
+	if len(dst) < len(src) {
+		panic("crypto/cipher: output smaller than input")
+	}
+	for len(src) > 0 {
+		p.Block.Encrypt(dst, src[:p.BlockSize()])
+		src = src[p.BlockSize():]
+		dst = dst[p.BlockSize():]
+	}
+}
+
+func AESEncryptECB(data, key []byte) ([]byte, error) {
+	block, err := aes.NewCipher(key)
+	if err != nil {
+		return nil, err
+	}
+	ecb := ECBEncryptPKCS7{
+		Data:  data,
+		Block: block,
+	}
+	data = ecb.Padding()
+	enc := make([]byte, len(data))
+	ecb.CryptBlocks(enc, data)
+	return enc, nil
+}
 
 func TruncateStringFromStart(str string, l int) string {
 	return TruncateString(str, 0, l)

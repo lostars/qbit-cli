@@ -36,6 +36,8 @@ type Config struct {
 		ApiKey string `yaml:"api-key"`
 		User   string `yaml:"user"`
 	}
+
+	NeteaseMusicCookie string `yaml:"netease_music_cookie"`
 }
 
 func loadDefaultConfig() []byte {

@@ -1,11 +1,11 @@
 package cmd
 
 import (
-	"fmt"
 	"github.com/spf13/cobra"
 	"qbit-cli/internal/api"
 	"qbit-cli/pkg/utils"
 	"sort"
+	"strings"
 )
 
 func JobCmd() *cobra.Command {
@@ -43,7 +43,7 @@ func JobList() *cobra.Command {
 			if t, ok := v.(api.Tag); ok {
 				tags = t.Tags()
 			}
-			data = append(data, []string{v.JobName(), fmt.Sprintf("%v", tags), description})
+			data = append(data, []string{v.JobName(), strings.Join(tags, ","), description})
 		}
 
 		utils.PrintListWithColWidth(header, &data, map[int]int{2: 50}, true)

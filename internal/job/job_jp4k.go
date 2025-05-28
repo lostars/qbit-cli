@@ -138,6 +138,9 @@ func fourKItems(searchParams url.Values) []*api.EmbyItem {
 	if err != nil {
 		return nil
 	}
+	if len(tags.Items) < 1 {
+		return nil
+	}
 	tag := tags.Items[0].ID
 	searchParams.Add("GenreIds", tag)
 

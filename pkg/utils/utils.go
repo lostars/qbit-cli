@@ -15,30 +15,25 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
-	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
 	"unicode/utf8"
 )
 
-func FFMPEGRun(cmd string, args []string) error {
+func CmdRun(cmd string, args []string, defaultCmd string, defaultArgs []string) error {
 	if cmd == "" {
-		_, err := exec.Command("ffmpeg", "-version").CombinedOutput()
+		_, err := exec.Command(defaultCmd, defaultArgs...).CombinedOutput()
 		if err != nil {
 			return nil
 		}
-		cmd = "ffmpeg"
+		cmd = defaultCmd
 	}
 	_, err := exec.Command(cmd, args...).CombinedOutput()
 	if err != nil {
 		return err
 	}
 	return nil
-}
-
-func ReplaceExt(file, newExt string) string {
-	return strings.TrimSuffix(file, filepath.Ext(file)) + "." + newExt
 }
 
 func SaveStringToFile(path, content string) error {

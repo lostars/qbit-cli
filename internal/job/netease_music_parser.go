@@ -5,14 +5,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/spf13/cobra"
 	"log"
 	"math/rand"
 	"net/http"
 	"net/url"
 	"os"
 	"path/filepath"
-	"qbit-cli/internal/api"
 	"qbit-cli/internal/config"
 	"qbit-cli/pkg/utils"
 	"strconv"
@@ -22,36 +20,8 @@ import (
 
 type NeteaseMusicParser struct {
 	maxBitrate    bool
-	level         string
-	savePath      string
-	ffmpeg        string
-	output        string
 	songInfo      *NeteaseSongInfo
 	songPrivilege *NeteaseSongPrivilege
-}
-
-func (parser *NeteaseMusicParser) JobName() string {
-	return "nmp"
-}
-
-func (parser *NeteaseMusicParser) Tags() []string {
-	return []string{"Parser", "NeteaseMusic"}
-}
-
-func (parser *NeteaseMusicParser) Description() string {
-	return `A NeteaseMusic Parser implementation from https://github.com/Suxiaoqinx/Netease_url
-Automatically save metadata to audio file if you install ffmpeg or set ffmpeg bin file path.
-If you got -110 code, ensure you got a VIP.
-Cookie is required in config yaml file.
-Naming rule:
-album songs will save to [artist]-[album] folder with [track].[song].[fileExt]
-playlist songs will save to [playlist] folder with [track].[song].[fileExt]
-single song will save with [track].[song].[fileExt]
-`
-}
-
-func init() {
-	api.RegisterJob(&NeteaseMusicParser{})
 }
 
 var quality = map[string]string{
@@ -63,88 +33,21 @@ var quality = map[string]string{
 	"jyeffect": "高清环绕声",
 	"jymaster": "超清母带",
 }
-var levelUsage = strings.Replace(fmt.Sprintf("song level: %s", quality), "map[", "[", 1)
-var SongOutput = map[string]string{
-	"json": "json",
-	"file": "file",
+
+func (parser *NeteaseMusicParser) availableQuality() {
+	for k, v := range quality {
+		fmt.Printf("%s: %s\n", k, v)
+	}
 }
 
-var cookie = ""
+var neteaseCookie = config.GetConfig().NeteaseMusicCookie
 
-func (parser *NeteaseMusicParser) RunCommand() *cobra.Command {
-	var cmd = &cobra.Command{
-		Use:   parser.JobName() + " <id>...",
-		Short: "NeteaseMusic Parser(NMP)",
-		Long:  parser.Description(),
+func (parser *NeteaseMusicParser) parsePlaylist(id string) error {
+	playlistId, err := strconv.ParseInt(id, 10, 64)
+	if err != nil {
+		return errors.New("invalid playlist id")
 	}
-
-	var (
-		o, savePath, level             string
-		maxBitrate                     bool
-		ffmpeg                         string
-		songIds, albumIds, playlistIds []int64
-	)
-
-	cmd.Flags().Int64SliceVar(&songIds, "song-ids", []int64{}, "song ids separated by comma")
-	cmd.Flags().Int64SliceVar(&albumIds, "album-ids", []int64{}, "album ids separated by comma")
-	cmd.Flags().Int64SliceVar(&playlistIds, "playlist-ids", []int64{}, "playlist ids separated by comma")
-
-	cmd.Flags().StringVar(&ffmpeg, "ffmpeg", "", "ffmpeg command path, provide to add metadata to audio file")
-	cmd.Flags().BoolVar(&maxBitrate, "max-bitrate", true, `auto get max bitrate song, ensure that you got a VIP`)
-	cmd.Flags().StringVar(&o, "output", "file", "output: json|file")
-	cmd.Flags().StringVar(&savePath, "save-path", "", "song file save path")
-	cmd.Flags().StringVar(&level, "level", "exhigh", levelUsage)
-
-	cmd.RunE = func(cmd *cobra.Command, args []string) error {
-		cookie = config.GetConfig().NeteaseMusicCookie
-		if cookie == "" {
-			return errors.New("cookie is required")
-		}
-		if quality[level] == "" {
-			return errors.New("level is invalid")
-		}
-		if SongOutput[o] == "" {
-			return errors.New("output is invalid")
-		}
-		p := NeteaseMusicParser{
-			maxBitrate: maxBitrate,
-			level:      level,
-			savePath:   savePath,
-			ffmpeg:     ffmpeg,
-			output:     o,
-		}
-
-		// parse songs
-		if len(songIds) > 0 {
-			infos, err := getNeteaseSongInfo(songIds...)
-			if err != nil {
-				return err
-			}
-			for _, song := range infos.Songs {
-				p.songInfo = &song
-				p.songPrivilege = &song.Privilege
-				_ = p.parseSong()
-			}
-		}
-
-		// parse playlists
-		for _, id := range playlistIds {
-			_ = p.parsePlaylist(id)
-		}
-
-		// parse albums
-		for _, id := range albumIds {
-			_ = p.parseAlbum(id)
-		}
-
-		return nil
-	}
-
-	return cmd
-}
-
-func (parser *NeteaseMusicParser) parsePlaylist(id int64) error {
-	result, err := playlistDetail(id)
+	result, err := playlistDetail(playlistId)
 	if err != nil {
 		return err
 	}
@@ -152,12 +55,10 @@ func (parser *NeteaseMusicParser) parsePlaylist(id int64) error {
 		return errors.New("no playlist songs found")
 	}
 	playlist := result.Playlist.Name
-	if !utils.FileExists(playlist) {
-		if err := os.Mkdir(playlist, 0777); err != nil {
-			return err
-		}
+	err = parserConfig.newSavePath(playlist)
+	if err != nil {
+		return err
 	}
-	parser.savePath = filepath.Join(parser.savePath, playlist)
 
 	songIds := make([]int64, 0, len(result.Playlist.TrackIds))
 	for _, trackId := range result.Playlist.TrackIds {
@@ -172,18 +73,22 @@ func (parser *NeteaseMusicParser) parsePlaylist(id int64) error {
 	for _, s := range infos.Songs {
 		parser.songInfo = &s
 		parser.songPrivilege = &s.Privilege
-		_ = parser.parseSong()
+		_ = parser.parseSong(strconv.FormatInt(s.ID, 10))
 	}
 	return nil
 }
 
-func (parser *NeteaseMusicParser) parseAlbum(id int64) error {
-	songs, err := albumDetail(id)
+func (parser *NeteaseMusicParser) parseAlbum(id string) error {
+	albumId, err := strconv.ParseInt(id, 10, 64)
+	if err != nil {
+		return errors.New("invalid album id")
+	}
+	songs, err := albumDetail(albumId)
 	if err != nil {
 		return err
 	}
 	if songs == nil || len(*songs) < 1 {
-		return errors.New("no songs found")
+		return errors.New(fmt.Sprintf("album %s no songs found", id))
 	}
 
 	data := *songs
@@ -191,22 +96,46 @@ func (parser *NeteaseMusicParser) parseAlbum(id int64) error {
 	if len(data[0].Artists) > 0 {
 		album = data[0].Artists[0].Name + "-" + album
 	}
-	if !utils.FileExists(album) {
-		err := os.Mkdir(album, 0777)
-		if err != nil {
-			return err
-		}
+	err = parserConfig.newSavePath(album)
+	if err != nil {
+		return err
 	}
-	parser.savePath = filepath.Join(parser.savePath, album)
 	for _, s := range data {
 		parser.songInfo = &s
 		parser.songPrivilege = &s.Privilege
-		_ = parser.parseSong()
+		_ = parser.parseSong(strconv.FormatInt(s.ID, 10))
 	}
 	return nil
 }
 
-func (parser *NeteaseMusicParser) parseSong() error {
+func (parser *NeteaseMusicParser) parseSong(id string) error {
+	if parser.songInfo == nil {
+		log.Printf("netease song load from id: %s\n", id)
+		songId, err := strconv.ParseInt(id, 10, 64)
+		if err != nil {
+			return errors.New("invalid song id")
+		}
+		info, err := getNeteaseSongInfo(songId)
+		if err != nil {
+			return err
+		}
+		parser.songInfo = &info.Songs[0]
+		if info.Privileges != nil && len(info.Privileges) > 0 {
+			parser.songPrivilege = &info.Privileges[0]
+		} else {
+			log.Printf("%s no privileges found\n", id)
+		}
+	}
+
+	// check quality
+	if parserConfig.quality != "" {
+		if q := quality[parserConfig.quality]; q == "" {
+			return errors.New("invalid quality")
+		}
+	} else {
+		parserConfig.quality = "exhigh"
+	}
+
 	songId := parser.songInfo.ID
 	filename, albumPic := parser.songInfo.Name, ""
 	if len(parser.songInfo.Artists) > 0 {
@@ -214,10 +143,10 @@ func (parser *NeteaseMusicParser) parseSong() error {
 	}
 
 	if parser.maxBitrate && parser.songPrivilege.DownloadMaxBitrateLevel != "" {
-		parser.level = parser.songPrivilege.DownloadMaxBitrateLevel
+		parserConfig.quality = parser.songPrivilege.DownloadMaxBitrateLevel
 	}
-	log.Printf("song level: %s\n", parser.level)
-	song, err := getNeteaseSong(songId, parser.level, cookie)
+	log.Printf("song quality: %s\n", parserConfig.quality)
+	song, err := getNeteaseSong(songId, parserConfig.quality)
 	if err != nil {
 		fmt.Println(err)
 		return err
@@ -232,36 +161,59 @@ func (parser *NeteaseMusicParser) parseSong() error {
 	if parser.songInfo.Track > 0 {
 		track += strconv.Itoa(parser.songInfo.Track) + "."
 	}
-	filename = filepath.Join(parser.savePath, track+filename+"."+song.EncodeType)
-	log.Println(filename)
+	filename = filepath.Join(parserConfig.savePath, track+filename+"."+song.EncodeType)
 
-	switch parser.output {
-	case "file":
-		// download audio file
-		_ = utils.DownloadUrlToFile(filename, song.Url)
-		// download cover
-		cover := strings.TrimSuffix(filename, filepath.Ext(filename))
-		if albumPic != "" {
-			if ext := filepath.Ext(albumPic); ext != "" {
-				cover += ext
-			} else {
-				cover += ".jpg"
-			}
-			_ = utils.DownloadUrlToFile(cover, albumPic)
+	// download audio file
+	err = utils.DownloadUrlToFile(filename, song.Url)
+	if err != nil {
+		return err
+	}
+	// download cover
+	cover := parserConfig.coverPathFromAudio(filename, albumPic)
+	if albumPic != "" {
+		_ = utils.DownloadUrlToFile(cover, albumPic)
+		defer os.Remove(cover)
+	}
+	// get lyrics
+	lyric := ""
+	lr := getSongLyrics(songId)
+	if lr != nil {
+		lyric = lr.Lyric.Lyric
+	}
+	// save metadata
+	metadata := SongMetadata{
+		AlbumCover: cover,
+		AlbumName:  parser.songInfo.Album.Name,
+		Lyrics:     lyric,
+		Name:       parser.songInfo.Name,
+		Artists:    parser.songInfo.artists(),
+		Track:      strconv.Itoa(parser.songInfo.Track),
+		Disc:       parser.songInfo.CD,
+		Publish:    time.UnixMilli(parser.songInfo.PublishTime).Format("2006"),
+	}
+	metadata.save(filename)
+
+	return nil
+}
+
+func (parser *NeteaseMusicParser) parseSongs(id ...string) error {
+	if len(id) == 0 {
+		return nil
+	}
+	var ids = make([]int64, 0, len(id))
+	for _, v := range id {
+		if songId, err := strconv.ParseInt(v, 10, 64); err == nil {
+			ids = append(ids, songId)
 		}
-		// save lyric
-		lyric := ""
-		lr := getSongLyrics(songId)
-		if lr != nil {
-			lyric = lr.Lyric.Lyric
-		}
-		saveMetadata(parser.ffmpeg, filename, parser.songInfo, cover, lyric)
-		_ = os.Remove(cover)
-	case "json":
-		d, _ := json.MarshalIndent(song, "", "  ")
-		infoJson, _ := json.MarshalIndent(parser.songInfo, "", "  ")
-		fmt.Println(string(infoJson))
-		fmt.Println(string(d))
+	}
+	infos, err := getNeteaseSongInfo(ids...)
+	if err != nil {
+		return err
+	}
+	for _, song := range infos.Songs {
+		parser.songInfo = &song
+		parser.songPrivilege = &song.Privilege
+		_ = parser.parseSong("")
 	}
 	return nil
 }
@@ -274,7 +226,7 @@ func albumDetail(albumId int64) (*[]NeteaseSongInfo, error) {
 	}
 	req.Header.Set("User-Agent", "Mozilla/5.0")
 	req.Header.Set("Referer", "https://music.163.com/")
-	req.Header.Set("Cookie", cookie)
+	req.Header.Set("Cookie", neteaseCookie)
 	resp, err := client.Do(req)
 	if err != nil {
 		return nil, err
@@ -296,7 +248,7 @@ func playlistDetail(playlistId int64) (*NeteasePlaylistResult, error) {
 	req.Header.Set("User-Agent", "Mozilla/5.0")
 	req.Header.Set("Referer", "https://music.163.com/")
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	req.Header.Set("Cookie", cookie)
+	req.Header.Set("Cookie", neteaseCookie)
 	resp, err := client.Do(req)
 	if err != nil {
 		return nil, err
@@ -308,53 +260,6 @@ func playlistDetail(playlistId int64) (*NeteasePlaylistResult, error) {
 		return nil, err
 	}
 	return &result, nil
-}
-
-func saveMetadata(cmd, file string, info *NeteaseSongInfo, coverFile, lyricStr string) {
-	if info == nil {
-		return
-	}
-	if !utils.FileExists(file) {
-		log.Printf("%s not exists\n", file)
-		return
-	}
-
-	var args = make([]string, 0, 10)
-	args = append(args, "-y", "-i", file)
-	if utils.FileExists(coverFile) {
-		args = append(args, "-i", coverFile, "-map", "0", "-map", "1", "-metadata:s:v", "comment=Cover (front)")
-	}
-	if lyricStr != "" {
-		args = append(args, "-metadata", fmt.Sprintf("lyrics=%s", lyricStr))
-	}
-	if info.Name != "" {
-		args = append(args, "-metadata", fmt.Sprintf("Title=%s", info.Name))
-	}
-	if len(info.Artists) > 0 {
-		args = append(args, "-metadata", fmt.Sprintf("Artist=%s", info.Artists[0].Name))
-	}
-	if info.Album.Name != "" {
-		args = append(args, "-metadata", fmt.Sprintf("Album=%s", info.Album.Name))
-	}
-	if info.Track > 0 {
-		args = append(args, "-metadata", fmt.Sprintf("Track=%d", info.Track))
-	}
-	if info.CD != "" {
-		args = append(args, "-metadata", fmt.Sprintf("Disc=%s", info.CD))
-	}
-	if info.PublishTime > 0 {
-		publishDate := time.UnixMilli(info.PublishTime)
-		args = append(args, "-metadata", fmt.Sprintf("Date=%s", publishDate.Format("2006")))
-	}
-	newFile := file + filepath.Ext(file)
-	args = append(args, "-codec", "copy", newFile)
-
-	err := utils.FFMPEGRun(cmd, args)
-	if err != nil {
-		log.Println(err)
-	} else {
-		_ = os.Rename(newFile, file)
-	}
 }
 
 var aesKey = []byte("e82ckenh8dichen8")
@@ -386,7 +291,7 @@ func getSongLyrics(id int64) *NeteaseLyricsResult {
 		return nil
 	}
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	req.Header.Set("Cookie", cookie)
+	req.Header.Set("Cookie", neteaseCookie)
 	resp, err := client.Do(req)
 	if err != nil {
 		return nil
@@ -427,11 +332,15 @@ func getNeteaseSongInfo(ids ...int64) (*NeteaseSongInfoResult, error) {
 	if err != nil {
 		return nil, err
 	}
+	if info.Songs == nil || len(info.Songs) < 1 {
+		log.Println("ids: ", ids)
+		return nil, errors.New("no songs found")
+	}
 
 	return &info, nil
 }
 
-func getNeteaseSong(id int64, level string, cookies string) (*NeteaseSong, error) {
+func getNeteaseSong(id int64, level string) (*NeteaseSong, error) {
 	requestId := strconv.Itoa(rand.New(rand.NewSource(time.Now().UnixNano())).Intn(10000000) + 20000000)
 	headerConfig := map[string]string{
 		"os":        "pc",
@@ -468,9 +377,7 @@ func getNeteaseSong(id int64, level string, cookies string) (*NeteaseSong, error
 	}
 
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	if cookies != "" {
-		req.Header.Set("Cookie", cookies)
-	}
+	req.Header.Set("Cookie", neteaseCookie)
 	resp, err := client.Do(req)
 	if err != nil {
 		return nil, err
@@ -537,6 +444,17 @@ type NeteaseSongInfo struct {
 	PublishTime int64                `json:"publishTime"`
 	Single      int                  `json:"single"` // 1=single
 	Privilege   NeteaseSongPrivilege `json:"privilege"`
+}
+
+func (i *NeteaseSongInfo) artists() []string {
+	if i.Artists == nil {
+		return nil
+	}
+	var artists []string
+	for _, artist := range i.Artists {
+		artists = append(artists, artist.Name)
+	}
+	return artists
 }
 
 type NeteaseLyricsResult struct {

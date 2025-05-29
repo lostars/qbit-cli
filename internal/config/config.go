@@ -38,6 +38,7 @@ type Config struct {
 	}
 
 	NeteaseMusicCookie string `yaml:"netease_music_cookie"`
+	QQMusicCookie      string `yaml:"qq_music_cookie"`
 }
 
 func loadDefaultConfig() []byte {

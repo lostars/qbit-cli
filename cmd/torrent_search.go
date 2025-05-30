@@ -128,6 +128,9 @@ make sure you plugin is valid and enabled`)
 			}
 		} else {
 			fmt.Printf("total search result size: %d\n", len(printList))
+			if len(printList) <= 0 {
+				return nil
+			}
 			str, err := json.MarshalIndent(printList, "", "  ")
 			if err != nil {
 				return err

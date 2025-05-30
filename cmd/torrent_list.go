@@ -44,7 +44,7 @@ stalled, stalled_uploading, stalled_downloading, errored`)
 			offset:   offset,
 		}
 		if interactive {
-			headers := []string{"name", "hash", "category", "tags", "state", "progress", "DOWN", "UP"}
+			headers := []string{"name", "hash", "CATE", "state", "PROG", "DOWN", "UP"}
 			model := utils.InteractiveTableModel{
 				Rows:         d.Rows(),
 				Header:       &headers,
@@ -65,12 +65,12 @@ stalled, stalled_uploading, stalled_downloading, errored`)
 
 		fmt.Printf("total size: %d\n", len(*torrentList))
 
-		headers := []string{"name", "hash", "category", "tags", "state", "progress"}
+		headers := []string{"name", "hash", "CATE", "tags", "state", "size", "PROG"}
 		var data = make([][]string, len(*torrentList))
 		for i, t := range *torrentList {
-			data[i] = []string{t.Name, t.Hash, t.Category, t.Tags, t.State, utils.FormatPercent(t.Progress)}
+			data[i] = []string{t.Name, t.Hash, t.Category, t.Tags, t.State, utils.FormatFileSizeAuto(uint64(t.Size), 1), utils.FormatPercent(t.Progress)}
 		}
-		utils.PrintListWithColWidth(headers, &data, map[int]int{0: 30}, false)
+		utils.PrintListWithColWidth(headers, &data, map[int]int{0: 30, 6: 6}, false)
 		return nil
 	}
 
@@ -169,7 +169,7 @@ func (t *torrentSearch) Rows() *[][]string {
 	for i, t := range *torrentList {
 		dl := utils.FormatFileSizeAuto(uint64(t.DLSpeed), 1) + "/S"
 		up := utils.FormatFileSizeAuto(uint64(t.UPSpeed), 1) + "/S"
-		data[i] = []string{t.Name, t.Hash, t.Category, t.Tags, t.State, utils.FormatPercent(t.Progress), dl, up}
+		data[i] = []string{t.Name, t.Hash, t.Category, t.State, utils.FormatPercent(t.Progress), dl, up}
 	}
 	t.rows = &data
 	return &data

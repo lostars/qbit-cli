@@ -34,6 +34,7 @@ type Torrent struct {
 	Tags     string  `json:"tags"`
 	DLSpeed  int64   `json:"dlspeed"`
 	UPSpeed  int64   `json:"upspeed"`
+	Size     int64   `json:"size"`
 }
 
 type TorrentFile struct {

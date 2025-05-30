@@ -6,6 +6,7 @@ torrent:
   default-save-path: ""
   default-save-category: ""
   default-save-tags: ""
+  default-search-plugin: ""
 jackett:
   host: ""
   api-key: ""

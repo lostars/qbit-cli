@@ -23,6 +23,7 @@ type Config struct {
 		DefaultSaveCategory string `yaml:"default-save-category"`
 		DefaultSaveTags     string `yaml:"default-save-tags"`
 		DefaultSavePath     string `yaml:"default-save-path"`
+		DefaultSearchPlugin string `yaml:"default-search-plugin"`
 	} `yaml:"torrent"`
 
 	Jackett struct {

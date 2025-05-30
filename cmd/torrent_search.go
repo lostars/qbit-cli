@@ -8,6 +8,7 @@ import (
 	"github.com/spf13/cobra"
 	"net/url"
 	"qbit-cli/internal/api"
+	"qbit-cli/internal/config"
 	"qbit-cli/pkg/utils"
 	"regexp"
 	"strconv"
@@ -43,7 +44,7 @@ This list display formated json.
 	)
 
 	// search flags
-	searchCmd.Flags().StringVar(&plugins, "plugins", "enabled", `plugins a|b|c, all and enabled also supported.
+	searchCmd.Flags().StringVar(&plugins, "plugins", "", `plugins a|b|c, all and enabled also supported.
 make sure you plugin is valid and enabled`)
 	searchCmd.Flags().StringVar(&category, "category", "all", "category of plugin(define by plugin)")
 	searchCmd.Flags().StringVar(&torrentRegex, "torrent-regex", "", "torrent file name filter")
@@ -63,6 +64,12 @@ make sure you plugin is valid and enabled`)
 			"pattern": {args[0]},
 		}
 
+		if plugins == "" {
+			plugins = config.GetConfig().Torrent.DefaultSearchPlugin
+		}
+		if plugins == "" {
+			plugins = "enabled"
+		}
 		if plugins != "" {
 			params.Set("plugins", plugins)
 		}

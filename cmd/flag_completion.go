@@ -85,7 +85,13 @@ func (f *JackettIndexerFlagRegister) complete(toComplete string) []string {
 	}
 	var data = make([]string, 0, len(*indexers))
 	for _, indexer := range *indexers {
-		data = append(data, indexer.ID)
+		if toComplete != "" {
+			if strings.Contains(indexer.ID, toComplete) {
+				data = append(data, indexer.ID)
+			}
+		} else {
+			data = append(data, indexer.ID)
+		}
 	}
 	return data
 }

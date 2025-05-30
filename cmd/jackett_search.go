@@ -26,26 +26,32 @@ func JackettSearch() *cobra.Command {
 	}
 
 	var autoDownload, autoMM bool
-	var savePath, saveCategory, saveTags string
-	var indexer, torrentRegex string
+	var savePath, saveTags string
+	var torrentRegex string
 	var jsonFormat bool
 	var category []string
 	var interactive bool
 
+	saveCategory := FlagsProperty[string]{Flag: "save-category", Register: &TorrentCategoryFlagRegister{}}
+	indexer := FlagsProperty[string]{Flag: "indexer", Register: &JackettIndexerFlagRegister{}}
+
 	searchCmd.Flags().BoolVar(&autoDownload, "auto-download", false, "auto download")
 	searchCmd.Flags().BoolVar(&autoMM, "auto-manage", true, "whether enable torrent auto management default is true, valid only when auto download enabled")
 	searchCmd.Flags().StringVar(&savePath, "save-path", "", "save path")
-	searchCmd.Flags().StringVar(&saveCategory, "save-category", "", "save category")
+	searchCmd.Flags().StringVar(&saveCategory.Value, saveCategory.Flag, "", "save category")
 	searchCmd.Flags().StringVar(&saveTags, "save-tags", "", "save tags")
 
-	searchCmd.Flags().StringVar(&indexer, "indexer", "all", "indexer")
+	searchCmd.Flags().StringVar(&indexer.Value, indexer.Flag, "all", "indexer")
 	searchCmd.Flags().StringVar(&torrentRegex, "torrent-regex", "", "result title filter")
 	searchCmd.Flags().BoolVar(&jsonFormat, "json", false, "display results as json format")
-	searchCmd.Flags().StringSliceVar(&category, "category", []string{}, "category")
+	searchCmd.Flags().StringSliceVar(&category, "indexer-category", []string{}, "indexer category")
 	searchCmd.Flags().BoolVarP(&interactive, "interactive", "i", false, "interactive mode")
 
+	saveCategory.RegisterCompletion(searchCmd)
+	indexer.RegisterCompletion(searchCmd)
+
 	searchCmd.RunE = func(cmd *cobra.Command, args []string) error {
-		result, err := api.JackettSearch(indexer, category, args[0])
+		result, err := api.JackettSearch(indexer.Value, category, args[0])
 		if err != nil {
 			return err
 		}
@@ -80,7 +86,7 @@ func JackettSearch() *cobra.Command {
 					}
 					d[i] = url
 				}
-				AutoDownload(d, savePath, saveCategory, saveTags, autoMM)
+				AutoDownload(d, savePath, saveCategory.Value, saveTags, autoMM)
 			} else {
 				fmt.Println("no results found")
 			}
@@ -106,7 +112,7 @@ func JackettSearch() *cobra.Command {
 						WidthMap: map[int]int{0: 10, 1: 50, 2: 10, 3: 20, 4: 10, 5: 10},
 						Delegate: &jackettMsgDelegate{
 							autoDownload, autoMM,
-							savePath, saveCategory, saveTags,
+							savePath, saveCategory.Value, saveTags,
 							downloadList,
 						},
 					}

@@ -31,30 +31,23 @@ func JackettIndexers() *cobra.Command {
 
 	var enabled, jsonFormat bool
 	var filter string
-	cmd.Flags().BoolVar(&enabled, "enabled", false, "enable the Jackett")
+	cmd.Flags().BoolVar(&enabled, "enabled", false, "filter enabled indexers")
 	cmd.Flags().BoolVar(&jsonFormat, "json", false, "display results in json format")
-	cmd.Flags().StringVar(&filter, "filter", "", "filter the indexer by id")
+	cmd.Flags().StringVar(&filter, "filter", "", "filter the indexer by id(name)")
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
-		indexers, err := api.JackettIndexers()
+		indexers, err := api.JackettIndexers(enabled)
 		if err != nil {
 			return err
 		}
 		var results = make([]api.JackettIndexer, 0, len(*indexers))
 		for _, indexer := range *indexers {
-			if enabled && filter != "" {
-				if indexer.Configured && strings.Contains(indexer.ID, filter) {
+			if filter != "" {
+				if strings.Contains(indexer.ID, filter) {
 					results = append(results, indexer)
 				}
-				continue
-			}
-			if enabled && indexer.Configured {
+			} else {
 				results = append(results, indexer)
-				continue
-			}
-			if filter != "" && strings.Contains(indexer.ID, filter) {
-				results = append(results, indexer)
-				continue
 			}
 		}
 

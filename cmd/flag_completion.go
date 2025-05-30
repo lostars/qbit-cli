@@ -75,3 +75,17 @@ func (f *TorrentCategoryFlagRegister) complete(toComplete string) []string {
 	}
 	return result
 }
+
+type JackettIndexerFlagRegister struct{}
+
+func (f *JackettIndexerFlagRegister) complete(toComplete string) []string {
+	indexers, err := api.JackettIndexers(true)
+	if err != nil {
+		return nil
+	}
+	var data = make([]string, 0, len(*indexers))
+	for _, indexer := range *indexers {
+		data = append(data, indexer.ID)
+	}
+	return data
+}

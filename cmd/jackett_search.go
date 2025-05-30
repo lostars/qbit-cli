@@ -9,6 +9,7 @@ import (
 	"qbit-cli/internal/api"
 	"qbit-cli/pkg/utils"
 	"regexp"
+	"sort"
 	"strconv"
 	"time"
 )
@@ -75,6 +76,10 @@ func JackettSearch() *cobra.Command {
 				downloadList = append(downloadList, &t)
 			}
 		}
+
+		sort.Slice(downloadList, func(i, j int) bool {
+			return downloadList[i].Seeders > downloadList[j].Seeders
+		})
 
 		if autoDownload {
 			if len(downloadList) > 0 {

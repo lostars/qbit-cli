@@ -11,6 +11,7 @@ import (
 	"qbit-cli/internal/config"
 	"qbit-cli/pkg/utils"
 	"regexp"
+	"sort"
 	"strconv"
 	"time"
 )
@@ -115,6 +116,10 @@ make sure you plugin is valid and enabled`)
 				}
 			}
 		}
+
+		sort.Slice(printList, func(i, j int) bool {
+			return printList[i].NBSeeders > printList[j].NBSeeders
+		})
 
 		if interactive {
 			interactive = interactive && len(printList) > 0

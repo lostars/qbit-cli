@@ -73,10 +73,12 @@ func TorrentList() *cobra.Command {
 
 		fmt.Printf("total size: %d\n", len(*torrentList))
 
-		headers := []string{"name", "hash", "CATE", "tags", "state", "size", "PROG"}
+		headers := []string{"name", "hash", "CATE", "tags", "state", "size", "PROG", "AddOn"}
 		var data = make([][]string, len(*torrentList))
 		for i, t := range *torrentList {
-			data[i] = []string{t.Name, t.Hash, t.Category, t.Tags, t.State, utils.FormatFileSizeAuto(uint64(t.Size), 1), utils.FormatPercent(t.Progress)}
+			addOn := time.Unix(t.AddOn, 0).Format("2006-01-02")
+			data[i] = []string{t.Name, t.Hash, t.Category, t.Tags, t.State, utils.FormatFileSizeAuto(uint64(t.Size), 1),
+				utils.FormatPercent(t.Progress), addOn}
 		}
 		utils.PrintListWithColWidth(headers, &data, map[int]int{0: 30, 6: 6}, false)
 		return nil

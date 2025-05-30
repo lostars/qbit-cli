@@ -8,8 +8,12 @@ import (
 	"qbit-cli/internal/api"
 	"qbit-cli/pkg/utils"
 	"strconv"
+	"strings"
 	"time"
 )
+
+var torrentState = []string{"all", "downloading", "seeding", "completed", "stopped", "active", "inactive", "running",
+	"stalled", "stalled_uploading", "stalled_downloading", "errored"}
 
 func TorrentList() *cobra.Command {
 	listCmd := &cobra.Command{
@@ -19,25 +23,29 @@ func TorrentList() *cobra.Command {
 	}
 
 	var (
-		state, category, hashes, tag string
-		limit, offset                uint32
-		interactive                  bool
+		hashes, tag   string
+		limit, offset uint32
+		interactive   bool
 	)
+	category := FlagsProperty[string]{Flag: "category", Register: &TorrentCategoryFlagRegister{}}
+	state := FlagsProperty[string]{Flag: "state", Options: torrentState}
 
-	listCmd.Flags().StringVar(&state, "state", "", `state filter:
-all, downloading, seeding, completed, stopped, active, inactive, running, 
-stalled, stalled_uploading, stalled_downloading, errored`)
-	listCmd.Flags().StringVar(&category, "category", "", "category filter")
+	listCmd.Flags().StringVar(&state.Value, state.Flag, "", `state filter: `+strings.Join(torrentState, ","))
+	listCmd.Flags().StringVar(&category.Value, category.Flag, "", "category filter")
 	listCmd.Flags().StringVar(&tag, "tag", "", "tag filter")
 	listCmd.Flags().StringVar(&hashes, "hashes", "", "hash filter separated by |")
 	listCmd.Flags().Uint32Var(&limit, "limit", 0, "results limit")
 	listCmd.Flags().Uint32Var(&offset, "offset", 0, "results offset")
 	listCmd.Flags().BoolVarP(&interactive, "interactive", "i", false, "interactive mode")
 
+	// register flag completion
+	category.RegisterCompletion(listCmd)
+	state.RegisterCompletion(listCmd)
+
 	listCmd.RunE = func(cmd *cobra.Command, args []string) error {
 		d := torrentSearch{
-			state:    state,
-			category: category,
+			state:    state.Value,
+			category: category.Value,
 			hashes:   hashes,
 			tag:      tag,
 			limit:    limit,

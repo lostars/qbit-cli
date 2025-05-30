@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	c "qbit-cli/cmd"
 	"qbit-cli/internal/api"
 	"qbit-cli/pkg/utils"
 	"strings"
@@ -83,6 +84,8 @@ type musicBatchParser interface {
 	parseSongs(id ...string) error
 }
 
+var parsers = []string{"qq", "netease"}
+
 func (parser *MusicParser) RunCommand() *cobra.Command {
 	var cmd = &cobra.Command{
 		Use:   parser.JobName(),
@@ -94,6 +97,8 @@ func (parser *MusicParser) RunCommand() *cobra.Command {
 		showQuality                    bool
 	)
 
+	parserDefine := c.FlagsProperty[string]{Flag: "parser", Options: parsers}
+
 	cmd.Flags().StringSliceVar(&songIds, "song-ids", []string{}, "song ids separated by comma")
 	cmd.Flags().StringSliceVar(&albumIds, "album-ids", []string{}, "album ids separated by comma")
 	cmd.Flags().StringSliceVar(&playlistIds, "playlist-ids", []string{}, "playlist ids separated by comma")
@@ -104,7 +109,7 @@ func (parser *MusicParser) RunCommand() *cobra.Command {
 	cmd.Flags().StringVar(&parserConfig.quality, "quality", "", `parser quality, defaults:
 netease: exhigh
 qq: ogg_640`)
-	cmd.Flags().StringVar(&parserConfig.parserType, "parser", "", "Music parser: qq|netease")
+	cmd.Flags().StringVar(&parserConfig.parserType, parserDefine.Flag, "", "Music parser: "+strings.Join(parsers, "|"))
 
 	cmd.Flags().BoolVar(&showQuality, "available-quality", false, "show available quality")
 
@@ -113,9 +118,11 @@ qq: ogg_640`)
 	cmd.Flags().BoolVar(&maxBitrate, "max-bitrate", false, `enable max bitrate, only valid with netease parser.
 Parser will automatically parse the maximum bitrate downloadable audio, ensure you got a VIP.`)
 
-	var p musicParserHandler
+	// register completion
+	parserDefine.RegisterCompletion(cmd)
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
+		var p musicParserHandler
 		switch parserConfig.parserType {
 		default:
 			return errors.New("unknown parser")

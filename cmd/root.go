@@ -7,7 +7,6 @@ import (
 	"log"
 	"os"
 	"qbit-cli/internal/config"
-	_ "qbit-cli/internal/job"
 )
 
 func Execute(version string) {

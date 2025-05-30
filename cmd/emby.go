@@ -36,6 +36,8 @@ func ItemCmd() *cobra.Command {
 	return cmd
 }
 
+var refreshMode = []string{"FullRefresh", "Default", "ValidationOnly"}
+
 func ItemRefreshCommand() *cobra.Command {
 	var cmd = &cobra.Command{
 		Use:   "refresh <item>...",
@@ -49,22 +51,27 @@ func ItemRefreshCommand() *cobra.Command {
 	}
 
 	var (
-		recursive                             bool
-		metadataRefreshMode, imageRefreshMode string
-		replaceAllMetadata, replaceAllImages  bool
+		recursive                            bool
+		replaceAllMetadata, replaceAllImages bool
 	)
 
+	metadataRefreshMode := FlagsProperty[string]{Flag: "metadata-refresh-mode", Options: refreshMode}
+	imageRefreshMode := FlagsProperty[string]{Flag: "image-refresh-mode", Options: refreshMode}
+
 	cmd.Flags().BoolVar(&recursive, "recursive", true, "Indicates if the refresh should occur recursively.")
-	cmd.Flags().StringVar(&imageRefreshMode, "image-refresh-mode", "FullRefresh", "image refresh mode: FullRefresh|Default|ValidationOnly")
-	cmd.Flags().StringVar(&metadataRefreshMode, "metadata-refresh-mode", "FullRefresh", "metadata refresh mode: FullRefresh|Default|ValidationOnly")
+	cmd.Flags().StringVar(&imageRefreshMode.Value, "image-refresh-mode", "FullRefresh", "image refresh mode: "+strings.Join(refreshMode, ","))
+	cmd.Flags().StringVar(&metadataRefreshMode.Value, "metadata-refresh-mode", "FullRefresh", "metadata refresh mode: "+strings.Join(refreshMode, ","))
 	cmd.Flags().BoolVar(&replaceAllMetadata, "replace-all-metadata", false, "Determines if metadata should be replaced. Only applicable if mode is FullRefresh")
 	cmd.Flags().BoolVar(&replaceAllImages, "replace-all-images", false, "Determines if images should be replaced. Only applicable if mode is FullRefresh")
+
+	metadataRefreshMode.RegisterCompletion(cmd)
+	imageRefreshMode.RegisterCompletion(cmd)
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		params := url.Values{
 			"Recursive":           {strconv.FormatBool(recursive)},
-			"MetadataRefreshMode": {metadataRefreshMode},
-			"ImageRefreshMode":    {imageRefreshMode},
+			"MetadataRefreshMode": {metadataRefreshMode.Value},
+			"ImageRefreshMode":    {imageRefreshMode.Value},
 			"ReplaceAllMetadata":  {strconv.FormatBool(replaceAllMetadata)},
 			"ReplaceAllImages":    {strconv.FormatBool(replaceAllImages)},
 		}
@@ -81,6 +88,12 @@ func ItemRefreshCommand() *cobra.Command {
 	return cmd
 }
 
+var itemTypes = []string{"Audio", "Video", "Folder", "Episode", "Movie", "Trailer", "AdultVideo", "MusicVideo",
+	"BoxSet", "MusicAlbum", "MusicArtist", "Season", "Series", "Game", "GameSystem", "Book"}
+var sortOrders = []string{"Ascending", "Descending"}
+var sortBys = []string{"Album", "AlbumArtist", "Artist", "Budget", "CommunityRating", "CriticRating", "DateCreated",
+	"DatePlayed", "PlayCount", "PremiereDate", "ProductionYear", "SortName", "Random", "Revenue", "Runtime"}
+
 func ItemList() *cobra.Command {
 	var cmd = &cobra.Command{
 		Use:   "list [flags]",
@@ -88,29 +101,33 @@ func ItemList() *cobra.Command {
 	}
 
 	var (
-		includeItemTypes, excludeItemTypes  string
 		searchTerm                          string
 		genreIds                            string
-		sortBy, sortOrder                   string
 		limit, minWidth, maxWidth, parentId int
 		hasOverview                         int
 	)
+	includeItemTypes := FlagsProperty[string]{Flag: "include-item-types", Options: itemTypes}
+	excludeItemTypes := FlagsProperty[string]{Flag: "exclude-item-types", Options: itemTypes}
+	sortOrder := FlagsProperty[string]{Flag: "sort-order", Options: sortOrders}
+	sortBy := FlagsProperty[string]{Flag: "sort-by", Options: sortBys}
 
-	cmd.Flags().StringVar(&sortBy, "sort-by", "", `Options: Album, AlbumArtist, Artist, Budget, 
-CommunityRating, CriticRating, DateCreated, DatePlayed, PlayCount, 
-PremiereDate, ProductionYear, SortName, Random, Revenue, Runtime`)
-	cmd.Flags().StringVar(&sortOrder, "sort-order", "", "Sort Order: Ascending,Descending")
+	cmd.Flags().StringVar(&sortBy.Value, sortBy.Flag, "", `Options: `+strings.Join(sortBys, ","))
+	cmd.Flags().StringVar(&sortOrder.Value, sortOrder.Flag, "", "Sort Order: "+strings.Join(sortOrders, "|"))
+	cmd.Flags().StringVar(&includeItemTypes.Value, includeItemTypes.Flag, "", `Comma separated list of item types: `+strings.Join(itemTypes, ","))
+	cmd.Flags().StringVar(&excludeItemTypes.Value, excludeItemTypes.Flag, "", "Comma separated list of item types: "+strings.Join(itemTypes, ","))
 	cmd.Flags().StringVar(&genreIds, "genre-ids", "", "genres id separated by comma")
-	cmd.Flags().StringVar(&includeItemTypes, "include-item-types", "", `Comma separated list of item types:
-Movie,Series,Video,Game,MusicAlbum,Genres
-You may find all types here: https://dev.emby.media/doc/restapi/Item-Types.html`)
-	cmd.Flags().StringVar(&excludeItemTypes, "exclude-item-types", "", "exclude item types, same as include-item-types")
 	cmd.Flags().StringVar(&searchTerm, "search-term", "", "keywords")
 	cmd.Flags().IntVar(&limit, "limit", 50, "results limit")
 	cmd.Flags().IntVar(&minWidth, "min-width", 0, "item min width")
 	cmd.Flags().IntVar(&maxWidth, "max-width", 0, "item max width")
 	cmd.Flags().IntVar(&parentId, "parent-id", 0, "parent id")
 	cmd.Flags().IntVar(&hasOverview, "has-overview", -1, "has overview: 1 for yes, 0 for no")
+
+	// register completion
+	includeItemTypes.RegisterCompletion(cmd)
+	excludeItemTypes.RegisterCompletion(cmd)
+	sortBy.RegisterCompletion(cmd)
+	sortOrder.RegisterCompletion(cmd)
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		params := url.Values{
@@ -122,23 +139,23 @@ You may find all types here: https://dev.emby.media/doc/restapi/Item-Types.html`
 		} else if hasOverview == 0 {
 			params.Add("HasOverview", "false")
 		}
-		if includeItemTypes != "" {
+		if includeItemTypes.Value != "" {
 			params.Add("Recursive", "true")
-			params.Add("IncludeItemTypes", includeItemTypes)
+			params.Add("IncludeItemTypes", includeItemTypes.Value)
 		}
-		if excludeItemTypes != "" {
-			params.Add("ExcludeItemTypes", excludeItemTypes)
+		if excludeItemTypes.Value != "" {
+			params.Add("ExcludeItemTypes", excludeItemTypes.Value)
 			params.Add("Recursive", "true")
 		}
 		if searchTerm != "" {
 			params.Add("SearchTerm", searchTerm)
 			params.Add("Recursive", "true")
 		}
-		if sortBy != "" {
-			params.Add("SortBy", sortBy)
+		if sortBy.Value != "" {
+			params.Add("SortBy", sortBy.Value)
 		}
-		if sortOrder != "" {
-			params.Add("SortOrder", sortOrder)
+		if sortOrder.Value != "" {
+			params.Add("SortOrder", sortOrder.Value)
 		}
 		if genreIds != "" {
 			params.Add("GenreIds", genreIds)

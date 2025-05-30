@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/spf13/cobra"
 	"net/url"
+	c "qbit-cli/cmd"
 	"qbit-cli/internal/api"
 	"qbit-cli/internal/api/emby"
 	"qbit-cli/internal/config"
@@ -40,21 +41,27 @@ func (j *JP4K) RunCommand() *cobra.Command {
 	}
 
 	var (
-		plugins                          string
-		saveCategory, savePath, saveTags string
-		autoMM                           bool
-		premiereBefore, premiereAfter    string
+		savePath, saveTags            string
+		autoMM                        bool
+		premiereBefore, premiereAfter string
 	)
+
+	saveCategory := c.FlagsProperty[string]{Flag: "save-category", Register: &c.TorrentCategoryFlagRegister{}}
+	plugins := c.FlagsProperty[string]{Flag: "plugins", Register: &c.TorrentPluginsFlagRegister{}}
 
 	cmd.Flags().StringVar(&premiereBefore, "premiere-before", "", "movie premiere before, ISO format")
 	cmd.Flags().StringVar(&premiereAfter, "premiere-after", "", "movie premiere after, ISO format")
 
-	cmd.Flags().StringVar(&plugins, "plugins", "enabled", "which plugin to use, comma separated list of plugin names")
+	cmd.Flags().StringVar(&plugins.Value, plugins.Flag, "enabled", "which plugin to use, comma separated list of plugin names")
 	cmd.Flags().BoolVar(&autoMM, "auto-management", true, "whether enable torrent auto management")
 
-	cmd.Flags().StringVar(&saveCategory, "save-category", "", "torrent save category")
+	cmd.Flags().StringVar(&saveCategory.Value, saveCategory.Flag, "", "torrent save category")
 	cmd.Flags().StringVar(&savePath, "save-path", "", "torrent save path")
 	cmd.Flags().StringVar(&saveTags, "save-tags", "", "torrent save tags")
+
+	// register completion
+	saveCategory.RegisterCompletion(cmd)
+	plugins.RegisterCompletion(cmd)
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		searchParams := url.Values{}
@@ -87,8 +94,8 @@ func (j *JP4K) RunCommand() *cobra.Command {
 				"pattern":  {jpCode},
 				"category": {"all"},
 			}
-			if plugins != "" {
-				params.Set("plugins", plugins)
+			if plugins.Value != "" {
+				params.Set("plugins", plugins.Value)
 			}
 			result, err := api.SearchStart(params)
 			if err != nil {
@@ -115,7 +122,7 @@ func (j *JP4K) RunCommand() *cobra.Command {
 				urls = append(urls, item.FileURL)
 				fmt.Println(item.FileName)
 			}
-			err := addTorrents(urls, autoMM, saveCategory, saveTags, savePath)
+			err := addTorrents(urls, autoMM, saveCategory.Value, saveTags, savePath)
 			if err != nil {
 				return err
 			}
@@ -164,16 +171,16 @@ func addTorrents(urls []string, autoTMM bool, category, tags, savePath string) e
 	// load defaults from config file
 	if category == "" {
 		category = cfg.Torrent.DefaultSaveCategory
-		params.Add("category", category)
 	}
 	if tags == "" {
 		tags = cfg.Torrent.DefaultSaveTags
-		params.Add("tags", tags)
 	}
 	if savePath == "" {
 		savePath = cfg.Torrent.DefaultSavePath
-		params.Add("savepath", savePath)
 	}
+	params.Add("tags", tags)
+	params.Add("savepath", savePath)
+	params.Add("category", category)
 
 	if err := api.TorrentAdd(urls, params); err != nil {
 		return err

@@ -28,15 +28,19 @@ You can add torrent like: add /t/xx.torrent "magnet:xxx"
 	}
 
 	var (
-		category string
 		tags     string
 		autoTMM  bool
 		savePath string
 	)
-	addCmd.Flags().StringVar(&category, "category", "", "torrent category")
+	category := FlagsProperty[string]{Flag: "category", Register: &TorrentCategoryFlagRegister{}}
+
+	addCmd.Flags().StringVar(&category.Value, category.Flag, "", "torrent category")
 	addCmd.Flags().StringVar(&tags, "tags", "", "torrent tags split by ','")
 	addCmd.Flags().BoolVar(&autoTMM, "auto-manage", true, "Whether Automatic Torrent Management should be used, default is true")
 	addCmd.Flags().StringVar(&savePath, "save-path", "", "torrent save path")
+
+	// register completion
+	category.RegisterCompletion(addCmd)
 
 	addCmd.RunE = func(cmd *cobra.Command, args []string) error {
 		params := url.Values{
@@ -45,8 +49,8 @@ You can add torrent like: add /t/xx.torrent "magnet:xxx"
 		if tags != "" {
 			params.Add("tags", tags)
 		}
-		if category != "" {
-			params.Add("category", category)
+		if category.Value != "" {
+			params.Add("category", category.Value)
 		}
 		if savePath != "" && !autoTMM {
 			params.Add("savepath", savePath)

@@ -40,8 +40,6 @@ func (parser *NeteaseMusicParser) availableQuality() {
 	}
 }
 
-var neteaseCookie = config.GetConfig().NeteaseMusicCookie
-
 func (parser *NeteaseMusicParser) parsePlaylist(id string) error {
 	playlistId, err := strconv.ParseInt(id, 10, 64)
 	if err != nil {
@@ -226,7 +224,7 @@ func albumDetail(albumId int64) (*[]NeteaseSongInfo, error) {
 	}
 	req.Header.Set("User-Agent", "Mozilla/5.0")
 	req.Header.Set("Referer", "https://music.163.com/")
-	req.Header.Set("Cookie", neteaseCookie)
+	req.Header.Set("Cookie", config.GetConfig().NeteaseMusicCookie)
 	resp, err := httpClient.Do(req)
 	if err != nil {
 		return nil, err
@@ -248,7 +246,7 @@ func playlistDetail(playlistId int64) (*NeteasePlaylistResult, error) {
 	req.Header.Set("User-Agent", "Mozilla/5.0")
 	req.Header.Set("Referer", "https://music.163.com/")
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	req.Header.Set("Cookie", neteaseCookie)
+	req.Header.Set("Cookie", config.GetConfig().NeteaseMusicCookie)
 	resp, err := httpClient.Do(req)
 	if err != nil {
 		return nil, err
@@ -287,7 +285,7 @@ func getSongLyrics(id int64) *NeteaseLyricsResult {
 		return nil
 	}
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	req.Header.Set("Cookie", neteaseCookie)
+	req.Header.Set("Cookie", config.GetConfig().NeteaseMusicCookie)
 	resp, err := httpClient.Do(req)
 	if err != nil {
 		return nil
@@ -373,7 +371,7 @@ func getNeteaseSong(id int64, level string) (*NeteaseSong, error) {
 	}
 
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	req.Header.Set("Cookie", neteaseCookie)
+	req.Header.Set("Cookie", config.GetConfig().NeteaseMusicCookie)
 	resp, err := httpClient.Do(req)
 	if err != nil {
 		return nil, err

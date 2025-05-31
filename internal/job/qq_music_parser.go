@@ -196,7 +196,7 @@ func (parser *QQMusicParser) parseSong(id string) error {
 		return err
 	}
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Cookie", qqCookie)
+	req.Header.Set("Cookie", config.GetConfig().QQMusicCookie)
 	req.Header.Set("User-Agent", userAgent)
 	resp, err := httpClient.Do(req)
 	if err != nil {
@@ -272,7 +272,6 @@ func (parser *QQMusicParser) parseSong(id string) error {
 	return nil
 }
 
-var qqCookie = config.GetConfig().QQMusicCookie
 var qqSongInfoEndpoint = "https://c.y.qq.com/v8/fcg-bin/fcg_play_single_song.fcg"
 var qqSongAlbumCoverFormat = "https://y.qq.com/music/photo_new/T002R800x800M000%s.jpg"
 var qqSongParseEndpoint = "https://u.y.qq.com/cgi-bin/musicu.fcg"
@@ -293,7 +292,7 @@ func getPlaylist(id string) (*QQMusicPlaylist, error) {
 		return nil, err
 	}
 	req.Header.Set("referer", "https://y.qq.com/")
-	req.Header.Set("Cookie", qqCookie)
+	req.Header.Set("Cookie", config.GetConfig().QQMusicCookie)
 	req.Header.Set("User-Agent", userAgent)
 
 	resp, err := httpClient.Do(req)
@@ -326,7 +325,7 @@ func getAlbum(id string) (*QQMusicAlbum, error) {
 	if err != nil {
 		return nil, err
 	}
-	req.Header.Set("Cookie", qqCookie)
+	req.Header.Set("Cookie", config.GetConfig().QQMusicCookie)
 	req.Header.Set("User-Agent", userAgent)
 
 	resp, err := httpClient.Do(req)
@@ -399,7 +398,7 @@ func getLyrics(songId int64) (*QQMusicSongLyric, error) {
 		return nil, err
 	}
 	req.Header.Add("Content-Type", "application/json")
-	req.Header.Set("Cookie", qqCookie)
+	req.Header.Set("Cookie", config.GetConfig().QQMusicCookie)
 	req.Header.Set("User-Agent", userAgent)
 
 	resp, err := httpClient.Do(req)
@@ -436,7 +435,7 @@ func songInfo(id string) (*QQMusicSongInfo, error) {
 		return nil, err
 	}
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	req.Header.Set("Cookie", qqCookie)
+	req.Header.Set("Cookie", config.GetConfig().QQMusicCookie)
 
 	resp, err := httpClient.Do(req)
 	if err != nil {

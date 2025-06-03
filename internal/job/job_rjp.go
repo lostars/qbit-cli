@@ -5,6 +5,7 @@ import (
 	"github.com/spf13/cobra"
 	"net/url"
 	"path/filepath"
+	"qbit-cli/cmd"
 	"qbit-cli/internal/api"
 	"regexp"
 	"strings"
@@ -44,22 +45,24 @@ func (r *RenameJP) RunCommand() *cobra.Command {
 	}
 
 	var (
-		state, category, hashes, tag string
-		renameTorrent                bool
+		category, hashes, tag string
+		renameTorrent         bool
 	)
 
-	jp.Flags().StringVar(&state, "filter", "", `state filter:
-all, downloading, seeding, completed, stopped, active, inactive, 
-running, stalled, stalled_uploading, stalled_downloading, errored`)
+	state := cmd.FlagsProperty[string]{Flag: "state", Options: cmd.TorrentState}
+
+	jp.Flags().StringVar(&state.Value, state.Flag, "", "state filter:\n"+strings.Join(cmd.TorrentState, ","))
 	jp.Flags().StringVar(&category, "category", "", "category filter")
 	jp.Flags().StringVar(&tag, "tag", "", "tag filter")
 	jp.Flags().StringVar(&hashes, "hashes", "", "hash filter separated by |'")
 	jp.Flags().BoolVar(&renameTorrent, "rename-torrent", false, "whether to rename torrent files")
 
+	state.RegisterCompletion(jp)
+
 	jp.RunE = func(cmd *cobra.Command, args []string) error {
 		params := url.Values{}
-		if state != "" {
-			params.Set("filter", state)
+		if state.Value != "" {
+			params.Set("filter", state.Value)
 		}
 		if tag != "" {
 			params.Set("tag", tag)

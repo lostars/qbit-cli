@@ -12,7 +12,7 @@ import (
 	"time"
 )
 
-var torrentState = []string{"all", "downloading", "seeding", "completed", "stopped", "active", "inactive", "running",
+var TorrentState = []string{"all", "downloading", "seeding", "completed", "stopped", "active", "inactive", "running",
 	"stalled", "stalled_uploading", "stalled_downloading", "errored"}
 
 func TorrentList() *cobra.Command {
@@ -28,9 +28,9 @@ func TorrentList() *cobra.Command {
 		interactive   bool
 	)
 	category := FlagsProperty[string]{Flag: "category", Register: &TorrentCategoryFlagRegister{}}
-	state := FlagsProperty[string]{Flag: "state", Options: torrentState}
+	state := FlagsProperty[string]{Flag: "state", Options: TorrentState}
 
-	listCmd.Flags().StringVar(&state.Value, state.Flag, "", `state filter: `+strings.Join(torrentState, ","))
+	listCmd.Flags().StringVar(&state.Value, state.Flag, "", `state filter: `+strings.Join(TorrentState, ","))
 	listCmd.Flags().StringVar(&category.Value, category.Flag, "", "category filter")
 	listCmd.Flags().StringVar(&tag, "tag", "", "tag filter")
 	listCmd.Flags().StringVar(&hashes, "hashes", "", "hash filter separated by |")

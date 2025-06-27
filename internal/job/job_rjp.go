@@ -3,6 +3,7 @@ package job
 import (
 	"fmt"
 	"github.com/spf13/cobra"
+	"log"
 	"net/url"
 	"path/filepath"
 	"qbit-cli/cmd"
@@ -176,12 +177,13 @@ func parseJPName(fileName string, folder string) string {
 		return ""
 	}
 
-	if matches := JPPartsRegex.FindStringSubmatch(fileName); len(matches) > 2 {
-		jpCode += "-cd" + matches[2]
-	}
-
 	if JPCNRegex.MatchString(fileName) {
 		jpCode += "-C"
+	}
+
+	if matches := JPPartsRegex.FindStringSubmatch(fileName); len(matches) > 2 {
+		log.Println(matches)
+		jpCode += "-cd" + matches[3]
 	}
 
 	return jpCode
@@ -189,5 +191,5 @@ func parseJPName(fileName string, folder string) string {
 
 var JPCodeRegex = regexp.MustCompile(`([a-zA-Z]{2,5}-[0-9]{3,5}|FC2-PPV-\d{5,})`)
 var JP4KRegex = regexp.MustCompile(`([-\[])(4[kK])`)
-var JPPartsRegex = regexp.MustCompile(`\d+([-_]|-cd)([1-5])^[kK]`)
+var JPPartsRegex = regexp.MustCompile(`\d+(-4K)?(-cd|[-_])([1-5])[^kK]`)
 var JPCNRegex = regexp.MustCompile(`\d+(-[cC]|ch)`)

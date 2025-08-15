@@ -44,6 +44,7 @@ func (j *JP4K) RunCommand() *cobra.Command {
 		savePath, saveTags            string
 		autoMM                        bool
 		premiereBefore, premiereAfter string
+		extraCodes                    []string
 	)
 
 	saveCategory := c.FlagsProperty[string]{Flag: "save-category", Register: &c.TorrentCategoryFlagRegister{}}
@@ -59,6 +60,9 @@ func (j *JP4K) RunCommand() *cobra.Command {
 	cmd.Flags().StringVar(&savePath, "save-path", "", "torrent save path")
 	cmd.Flags().StringVar(&saveTags, "save-tags", "", "torrent save tags")
 
+	cmd.Flags().StringSliceVar(&extraCodes, "extra-codes", []string{}, `comma separated list of extra jp code.
+this option will find all jp video's 4k version which is filter by extra jp code.`)
+
 	// register completion
 	saveCategory.RegisterCompletion(cmd)
 	plugins.RegisterCompletion(cmd)
@@ -66,6 +70,7 @@ func (j *JP4K) RunCommand() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		searchParams := url.Values{}
 		searchParams.Add("Recursive", "true")
+		// video definition filter
 		searchParams.Add("MaxWidth", strconv.Itoa(3000))
 		if premiereBefore != "" {
 			searchParams.Add("MaxPremiereDate", premiereBefore)
@@ -75,6 +80,7 @@ func (j *JP4K) RunCommand() *cobra.Command {
 		}
 
 		items := fourKItems(searchParams)
+		items = append(items, searchExtraCodes(extraCodes)...)
 		if items == nil || len(items) <= 0 {
 			fmt.Println("no 4k items found")
 			return nil
@@ -132,6 +138,33 @@ func (j *JP4K) RunCommand() *cobra.Command {
 	}
 
 	return cmd
+}
+
+func searchExtraCodes(codes []string) []*api.EmbyItem {
+	// search extra codes which has no 4K tag
+	searchParams := url.Values{
+		"SearchTerm": codes,
+		"Recursive":  {"true"},
+		"Fields":     {"Genres"},
+		// 4k video filter
+		"MaxWidth": {strconv.Itoa(3000)},
+	}
+	items, err := emby.Items(searchParams)
+	if err != nil {
+		return nil
+	}
+	results := make([]*api.EmbyItem, 0, len(items.Items))
+	for _, item := range items.Items {
+		for _, g := range item.Genres {
+			// escape 4k tag which is handled by #fourKItems
+			if g == "4K" || g == "4k" {
+				continue
+			}
+		}
+		fmt.Println(item.Genres)
+		results = append(results, &item)
+	}
+	return results
 }
 
 func fourKItems(searchParams url.Values) []*api.EmbyItem {

@@ -168,6 +168,10 @@ func parseJPCode(fileName string, folder string) string {
 	if len(matches) > 2 {
 		jpCode += "-" + matches[2]
 	}
+
+	if JPCNRegex.MatchString(fileName) {
+		jpCode += "-C"
+	}
 	return jpCode
 }
 
@@ -175,10 +179,6 @@ func parseJPName(fileName string, folder string) string {
 	jpCode := parseJPCode(fileName, folder)
 	if jpCode == "" {
 		return ""
-	}
-
-	if JPCNRegex.MatchString(fileName) {
-		jpCode += "-C"
 	}
 
 	if matches := JPPartsRegex.FindStringSubmatch(fileName); len(matches) > 2 {

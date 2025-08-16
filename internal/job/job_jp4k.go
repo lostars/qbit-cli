@@ -161,7 +161,6 @@ func searchExtraCodes(codes []string) []*api.EmbyItem {
 				continue
 			}
 		}
-		fmt.Println(item.Genres)
 		results = append(results, &item)
 	}
 	return results

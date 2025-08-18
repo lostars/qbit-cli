@@ -3,12 +3,14 @@ package job
 import (
 	"fmt"
 	"github.com/spf13/cobra"
+	"log"
 	"net/url"
 	c "qbit-cli/cmd"
 	"qbit-cli/internal/api"
 	"qbit-cli/internal/api/emby"
 	"qbit-cli/internal/config"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -45,6 +47,7 @@ func (j *JP4K) RunCommand() *cobra.Command {
 		autoMM                        bool
 		premiereBefore, premiereAfter string
 		extraCodes                    []string
+		excludeUrls                   []string
 	)
 
 	saveCategory := c.FlagsProperty[string]{Flag: "save-category", Register: &c.TorrentCategoryFlagRegister{}}
@@ -62,6 +65,8 @@ func (j *JP4K) RunCommand() *cobra.Command {
 
 	cmd.Flags().StringSliceVar(&extraCodes, "extra-codes", []string{}, `comma separated list of extra jp code.
 this option will find all jp video's 4k version which is filter by extra jp code.`)
+
+	cmd.Flags().StringSliceVar(&excludeUrls, "exclude-urls", []string{}, `exclude certain search urls, using contains`)
 
 	// register completion
 	saveCategory.RegisterCompletion(cmd)
@@ -94,7 +99,7 @@ this option will find all jp video's 4k version which is filter by extra jp code
 				continue
 			}
 			jpCode := matches[1]
-			fmt.Printf("looking 4k version of %s...\n", jpCode)
+			fmt.Printf("searching 4k version of %s...\n", jpCode)
 
 			params := url.Values{
 				"pattern":  {jpCode},
@@ -125,6 +130,20 @@ this option will find all jp video's 4k version which is filter by extra jp code
 			urls := make([]string, 0, len(data))
 			fmt.Println("founded 4k items:")
 			for _, item := range data {
+				skip := false
+				if len(excludeUrls) > 0 {
+					for _, ex := range excludeUrls {
+						if ex != "" && strings.Contains(item.FileURL, ex) {
+							log.Printf("[%s] excluded...\n", item.FileName)
+							skip = true
+							break
+						}
+					}
+				}
+				if skip {
+					continue
+				}
+
 				urls = append(urls, item.FileURL)
 				fmt.Println(item.FileName)
 			}

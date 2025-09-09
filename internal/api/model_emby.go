@@ -36,7 +36,15 @@ type EmbyItem struct {
 		Primary string `json:"Primary"`
 		Logo    string `json:"Logo"`
 	} `json:"ImageTags"`
-	Overview string `json:"Overview"`
+	Overview string           `json:"Overview"`
+	People   []EmbyItemPeople `json:"People"`
+}
+
+type EmbyItemPeople struct {
+	Name            string `json:"Name"`
+	Id              string `json:"Id"`
+	Type            string `json:"Type"`
+	PrimaryImageTag string `json:"PrimaryImageTag"`
 }
 
 func (item *EmbyItem) IsMovie() bool {

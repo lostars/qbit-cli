@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/spf13/cobra"
+	"log"
 	"net/url"
 	"qbit-cli/internal/api"
 	"qbit-cli/internal/api/emby"
@@ -132,7 +133,7 @@ func ItemList() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		params := url.Values{
 			"Limit":  []string{strconv.FormatInt(int64(limit), 10)},
-			"Fields": []string{"PremiereDate", "ProductionYear", "Overview", "DateCreated"},
+			"Fields": []string{"PremiereDate", "ProductionYear", "Overview", "DateCreated", "People"},
 		}
 		if hasOverview == 1 {
 			params.Add("HasOverview", "true")
@@ -185,7 +186,11 @@ func ItemList() *cobra.Command {
 		fmt.Printf("total items: %d\n", size)
 		headers := []string{"ID", "Name", "Type", "IDX", "Created"}
 		var data = make([][]string, len(items.Items))
+		var noPeopleList []api.EmbyItem
 		for i, item := range items.Items {
+			if item.People == nil || len(item.People) <= 0 {
+				noPeopleList = append(noPeopleList, item)
+			}
 			create := ""
 			if !item.CreatedDate.IsZero() {
 				create = item.CreatedDate.Format("2006-01-02")
@@ -197,6 +202,9 @@ func ItemList() *cobra.Command {
 			data[i] = []string{item.ID, item.Name, item.Type, idx, create}
 		}
 		utils.PrintListWithColWidth(headers, &data, map[int]int{1: 50}, false)
+		for _, item := range noPeopleList {
+			log.Printf("item %s: no people found\n", item.Name)
+		}
 
 		return nil
 	}

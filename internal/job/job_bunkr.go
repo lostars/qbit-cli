@@ -17,6 +17,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -38,6 +39,8 @@ func init() {
 	api.RegisterJob(&Bunkr{})
 }
 
+var maxWorker = 2
+
 func (r *Bunkr) RunCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "bunkr <url>",
@@ -48,6 +51,7 @@ func (r *Bunkr) RunCommand() *cobra.Command {
 	var savePath string
 
 	cmd.Flags().StringVar(&savePath, "save-path", "", "file save path, default is current working directory")
+	cmd.Flags().IntVar(&maxWorker, "max-worker", maxWorker, "max worker number, if u get too many requests error, set it smaller or 1")
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		u := args[0]
@@ -74,6 +78,7 @@ func (r *Bunkr) RunCommand() *cobra.Command {
 		encryptedFile, err := getEncryptFile(client, slug, apiHost, u)
 		log.Println(encryptedFile)
 		fullPath := filepath.Join(savePath, filename)
+		start := time.Now()
 		if encryptedFile.Encrypted {
 
 			decrypted, err := decryptBunkrFile(encryptedFile, filename)
@@ -93,7 +98,8 @@ func (r *Bunkr) RunCommand() *cobra.Command {
 				return err
 			}
 		}
-		fmt.Printf("file saved to: %s\n", fullPath)
+		cost := time.Now().Sub(start)
+		fmt.Printf("file saved to: %s, cost: %s\n", fullPath, cost.String())
 
 		return nil
 	}
@@ -157,9 +163,116 @@ type EncryptedBunkrFile struct {
 
 var downloadHost = "https://get.bunkrr.su"
 
+func rangeDownload(url string, filePath string, total, chunkSize int64) {
+	file, err := os.OpenFile(filePath, os.O_CREATE|os.O_RDWR, 0644)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	defer file.Close()
+
+	if err = file.Truncate(total); err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	tasks := make(chan Task, maxWorker)
+	var wg sync.WaitGroup
+
+	for i := 0; i < maxWorker; i++ {
+		wg.Add(1)
+		go downloadChunk(i, url, file, tasks, &wg)
+	}
+
+	for start := int64(0); start < total; start += chunkSize {
+		end := start + chunkSize - 1
+		if end >= total {
+			end = total - 1
+		}
+		tasks <- Task{start: start, end: end}
+	}
+	close(tasks)
+	wg.Wait()
+}
+
+type Task struct {
+	start, end int64
+}
+
+func downloadChunk(id int, url string, file *os.File, tasks <-chan Task, wg *sync.WaitGroup) {
+	defer wg.Done()
+
+	for task := range tasks {
+		log.Printf("thread %d starting...\n", id)
+
+		for {
+			req, _ := http.NewRequest(http.MethodGet, url, nil)
+			req.Header.Set("referer", downloadHost)
+			req.Header.Set("Range", fmt.Sprintf("bytes=%d-%d", task.start, task.end))
+
+			client := &http.Client{Timeout: time.Minute * 60}
+			resp, err := client.Do(req)
+			if err != nil {
+				fmt.Println(err)
+				continue
+			}
+
+			if resp.StatusCode == http.StatusTooManyRequests {
+				resp.Body.Close()
+				time.Sleep(time.Second << 2)
+				continue
+			}
+
+			if resp.StatusCode != http.StatusPartialContent && resp.StatusCode != http.StatusOK {
+				fmt.Println("unexpected status: ", resp.Status)
+				resp.Body.Close()
+				break
+			}
+
+			_, _ = file.Seek(task.start, io.SeekStart)
+			_, err = io.Copy(file, resp.Body)
+			resp.Body.Close()
+			if err != nil {
+				fmt.Println("write error: ", err)
+			}
+			break
+		}
+
+	}
+
+}
+
+var chunkSize int64 = 10 * 1024 * 1024
+
 func downloadFile(client *http.Client, url string, file string) error {
 	req, _ := http.NewRequest(http.MethodGet, url, nil)
 	req.Header.Set("referer", downloadHost)
+
+	req.Header.Set("Range", "bytes=0-0")
+	headResp, err := client.Do(req)
+	if err == nil {
+		defer headResp.Body.Close()
+		// Content-Range bytes 0-0/397540573
+		contentRange := headResp.Header.Get("Content-Range")
+
+		if contentRange != "" {
+			var size int64
+			_, err = fmt.Sscanf(contentRange, "bytes 0-0/%d", &size)
+			if err != nil {
+				log.Println("failed to parse Content-Length, fallback to single thread download")
+			} else {
+				if size > chunkSize {
+					rangeDownload(url, file, size, chunkSize)
+				} else {
+					log.Println("file too small, fallback to single thread download")
+				}
+			}
+		}
+	} else {
+		log.Println(err)
+	}
+
+	req.Header.Del("Range")
 	resp, err := client.Do(req)
 	if err != nil {
 		return err

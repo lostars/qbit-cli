@@ -57,3 +57,18 @@ func RefreshItem(item string, params url.Values) error {
 		return errors.New(resp.Status)
 	}
 }
+
+func ResetItemMetadata(item string) error {
+	params := url.Values{
+		"ItemIds": []string{item},
+	}
+	resp, err := api.GetEmbyClient().Post("/emby/items/metadata/reset", params)
+	if err != nil {
+		return err
+	}
+	if resp.StatusCode == http.StatusNoContent || resp.StatusCode == http.StatusOK {
+		return nil
+	} else {
+		return errors.New(resp.Status)
+	}
+}

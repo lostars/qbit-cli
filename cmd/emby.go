@@ -54,6 +54,7 @@ func ItemRefreshCommand() *cobra.Command {
 	var (
 		recursive                            bool
 		replaceAllMetadata, replaceAllImages bool
+		resetBeforeRefresh                   bool
 	)
 
 	metadataRefreshMode := FlagsProperty[string]{Flag: "metadata-refresh-mode", Options: refreshMode}
@@ -62,8 +63,9 @@ func ItemRefreshCommand() *cobra.Command {
 	cmd.Flags().BoolVar(&recursive, "recursive", true, "Indicates if the refresh should occur recursively.")
 	cmd.Flags().StringVar(&imageRefreshMode.Value, "image-refresh-mode", "FullRefresh", "image refresh mode: "+strings.Join(refreshMode, ","))
 	cmd.Flags().StringVar(&metadataRefreshMode.Value, "metadata-refresh-mode", "FullRefresh", "metadata refresh mode: "+strings.Join(refreshMode, ","))
-	cmd.Flags().BoolVar(&replaceAllMetadata, "replace-all-metadata", false, "Determines if metadata should be replaced. Only applicable if mode is FullRefresh")
-	cmd.Flags().BoolVar(&replaceAllImages, "replace-all-images", false, "Determines if images should be replaced. Only applicable if mode is FullRefresh")
+	cmd.Flags().BoolVar(&replaceAllMetadata, "replace-all-metadata", true, "Determines if metadata should be replaced. Only applicable if mode is FullRefresh")
+	cmd.Flags().BoolVar(&replaceAllImages, "replace-all-images", true, "Determines if images should be replaced. Only applicable if mode is FullRefresh")
+	cmd.Flags().BoolVar(&resetBeforeRefresh, "reset-before-refresh", false, "Reset all metadata before refresh.")
 
 	metadataRefreshMode.RegisterCompletion(cmd)
 	imageRefreshMode.RegisterCompletion(cmd)
@@ -77,6 +79,12 @@ func ItemRefreshCommand() *cobra.Command {
 			"ReplaceAllImages":    {strconv.FormatBool(replaceAllImages)},
 		}
 		for _, arg := range args {
+			if resetBeforeRefresh {
+				err := emby.ResetItemMetadata(arg)
+				if err != nil {
+					fmt.Printf("%s reset failed: %s\n", arg, err)
+				}
+			}
 			err := emby.RefreshItem(arg, params)
 			if err != nil {
 				fmt.Printf("%s refresh failed: %s\n", arg, err)
@@ -187,9 +195,13 @@ func ItemList() *cobra.Command {
 		headers := []string{"ID", "Name", "Type", "IDX", "Created"}
 		var data = make([][]string, len(items.Items))
 		var noPeopleList []api.EmbyItem
+		var noBackdropList []api.EmbyItem
 		for i, item := range items.Items {
 			if item.People == nil || len(item.People) <= 0 {
 				noPeopleList = append(noPeopleList, item)
+			}
+			if item.BackdropImageTags == nil || len(item.BackdropImageTags) <= 0 {
+				noBackdropList = append(noBackdropList, item)
 			}
 			create := ""
 			if !item.CreatedDate.IsZero() {
@@ -203,7 +215,10 @@ func ItemList() *cobra.Command {
 		}
 		utils.PrintListWithColWidth(headers, &data, map[int]int{1: 50}, false)
 		for _, item := range noPeopleList {
-			log.Printf("item %s: no people found\n", item.Name)
+			log.Printf("no people found: %s\n", item.Name)
+		}
+		for _, item := range noBackdropList {
+			log.Printf("no backdrop found: %s\n", item.Name)
 		}
 
 		return nil

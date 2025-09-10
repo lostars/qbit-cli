@@ -21,7 +21,14 @@ import (
 	"time"
 )
 
-type Bunkr struct{}
+type Bunkr struct {
+	maxWorker int
+	savePath  string
+	client    *http.Client
+	url       string
+}
+
+var bunkr Bunkr
 
 func (r *Bunkr) JobName() string {
 	return "bunkr"
@@ -39,8 +46,6 @@ func init() {
 	api.RegisterJob(&Bunkr{})
 }
 
-var maxWorker = 2
-
 func (r *Bunkr) RunCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "bunkr <url>",
@@ -48,63 +53,79 @@ func (r *Bunkr) RunCommand() *cobra.Command {
 		Args:  cobra.ExactArgs(1),
 	}
 
-	var savePath string
-
-	cmd.Flags().StringVar(&savePath, "save-path", "", "file save path, default is current working directory")
-	cmd.Flags().IntVar(&maxWorker, "max-worker", maxWorker, "max worker number, if u get too many requests error, set it smaller or 1")
+	cmd.Flags().StringVar(&bunkr.savePath, "save-path", "", "file save path, default is current working directory")
+	cmd.Flags().IntVar(&bunkr.maxWorker, "max-worker", 2, "max worker number, if u get too many requests error, set it smaller or 1")
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
-		u := args[0]
-		parsedUrl, err := url.Parse(u)
-		if err != nil {
-			return err
-		}
-
-		slug := filepath.Base(parsedUrl.Path)
-		log.Printf("slug: %s\n", slug)
-		if slug == "" {
-			return errors.New("invalid url")
-		}
-		client := &http.Client{Timeout: time.Minute * 60}
-
-		filename, err := getShareFilename(client, u)
-		if err != nil {
-			return err
-		}
-		log.Printf("filename: %s\n", filename)
-
-		// get encrypted url
-		apiHost := parsedUrl.Scheme + "://" + parsedUrl.Host + "/api/vs"
-		encryptedFile, err := getEncryptFile(client, slug, apiHost, u)
-		log.Println(encryptedFile)
-		fullPath := filepath.Join(savePath, filename)
-		start := time.Now()
-		if encryptedFile.Encrypted {
-
-			decrypted, err := decryptBunkrFile(encryptedFile, filename)
+		path := args[0]
+		if strings.Contains(path, "/f/") {
+			// file share
+			bunkr.url = path
+			bunkr.client = &http.Client{Timeout: time.Minute * 60}
+			err := bunkr.download()
 			if err != nil {
 				return err
 			}
-			log.Printf("decrypted url: %s\n", decrypted)
-
-			err = downloadFile(client, decrypted, fullPath)
-			if err != nil {
-				return err
-			}
-
+		} else if strings.Contains(path, "/a/") {
+			// album share
+			return errors.New("album not supported yet")
 		} else {
-			err = downloadFile(client, u, fullPath)
-			if err != nil {
-				return err
-			}
+			return errors.New("unknown url")
 		}
-		cost := time.Now().Sub(start)
-		fmt.Printf("file saved to: %s, cost: %s\n", fullPath, cost.String())
 
 		return nil
 	}
 
 	return cmd
+}
+
+func (r *Bunkr) download() error {
+	parsedUrl, err := url.Parse(r.url)
+	if err != nil {
+		return err
+	}
+	slug := filepath.Base(parsedUrl.Path)
+	log.Printf("slug: %s\n", slug)
+	if slug == "" {
+		return errors.New("invalid url")
+	}
+
+	filename, err := getShareFilename(r.client, r.url)
+	if err != nil {
+		return err
+	}
+	log.Printf("filename: %s\n", filename)
+
+	// get encrypted url
+	apiHost := parsedUrl.Scheme + "://" + parsedUrl.Host + "/api/vs"
+	encryptedFile, err := getEncryptFile(r.client, slug, apiHost, r.url)
+	if err != nil {
+		return err
+	}
+	fullPath := filepath.Join(r.savePath, filename)
+	start := time.Now()
+	if encryptedFile.Encrypted {
+
+		decrypted, err := decryptBunkrFile(encryptedFile, filename)
+		if err != nil {
+			return err
+		}
+		log.Printf("decrypted url: %s\n", decrypted)
+
+		err = downloadFile(r.client, decrypted, fullPath)
+		if err != nil {
+			return err
+		}
+
+	} else {
+		err = downloadFile(r.client, r.url, fullPath)
+		if err != nil {
+			return err
+		}
+	}
+	cost := time.Now().Sub(start)
+	fmt.Printf("file saved to: %s, cost: %s\n", fullPath, cost.String())
+	return nil
 }
 
 func getEncryptFile(client *http.Client, slug string, apiHost string, referer string) (*EncryptedBunkrFile, error) {
@@ -176,10 +197,10 @@ func rangeDownload(url string, filePath string, total, chunkSize int64) {
 		return
 	}
 
-	tasks := make(chan Task, maxWorker)
+	tasks := make(chan Task, bunkr.maxWorker)
 	var wg sync.WaitGroup
 
-	for i := 0; i < maxWorker; i++ {
+	for i := 0; i < bunkr.maxWorker; i++ {
 		wg.Add(1)
 		go downloadChunk(i, url, file, tasks, &wg)
 	}

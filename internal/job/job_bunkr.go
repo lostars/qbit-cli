@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/spf13/cobra"
+	"golang.org/x/net/html"
 	"io"
 	"log"
 	"net/http"
@@ -22,10 +23,10 @@ import (
 )
 
 type Bunkr struct {
-	maxWorker int
-	savePath  string
-	client    *http.Client
-	url       string
+	maxWorker, albumMaxWorker int
+	savePath                  string
+	client                    *http.Client
+	url                       string
 }
 
 var bunkr Bunkr
@@ -55,6 +56,7 @@ func (r *Bunkr) RunCommand() *cobra.Command {
 
 	cmd.Flags().StringVar(&bunkr.savePath, "save-path", "", "file save path, default is current working directory")
 	cmd.Flags().IntVar(&bunkr.maxWorker, "max-worker", 2, "max worker number, if u get too many requests error, set it smaller or 1")
+	cmd.Flags().IntVar(&bunkr.albumMaxWorker, "album-max-worker", 2, "max album worker number, if u get 503 error, set it smaller or 1")
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		path := args[0]
@@ -68,7 +70,9 @@ func (r *Bunkr) RunCommand() *cobra.Command {
 			}
 		} else if strings.Contains(path, "/a/") {
 			// album share
-			return errors.New("album not supported yet")
+			bunkr.url = path
+			bunkr.client = &http.Client{Timeout: time.Minute * 60}
+			bunkr.albumDownload()
 		} else {
 			return errors.New("unknown url")
 		}
@@ -77,6 +81,121 @@ func (r *Bunkr) RunCommand() *cobra.Command {
 	}
 
 	return cmd
+}
+
+func (r *Bunkr) albumDownload() {
+	parsedAlbum, err := url.Parse(r.url)
+	if err != nil {
+		return
+	}
+
+	req, _ := http.NewRequest(http.MethodGet, r.url, nil)
+	resp, err := r.client.Do(req)
+	if err != nil {
+		log.Println(err)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		log.Printf("%s: %s", r.url, resp.Status)
+		return
+	}
+
+	urls := findHtmlHrefNode(resp.Body)
+	var files []string
+	host := parsedAlbum.Scheme + "://" + parsedAlbum.Host
+	// max page 1000
+	var pages = make([]bool, 1002)
+	for _, a := range urls {
+		if strings.HasPrefix(a, "/f/") {
+			files = append(files, host+a)
+		} else if strings.HasPrefix(a, "?page") {
+			results := regexp.MustCompile(`\?page=(\d+)`).FindStringSubmatch(a)
+			if len(results) < 2 {
+				log.Println("unknown page: ", a)
+				continue
+			}
+
+			page, err := strconv.Atoi(results[1])
+			if err != nil {
+				log.Println("parse page error: ", a)
+				continue
+			}
+
+			if page >= len(pages) {
+				panic("max page exceeded")
+			}
+			if pages[page] {
+				continue
+			}
+
+			// parse page
+			req, _ := http.NewRequest(http.MethodGet, host+a, nil)
+			resp, err := r.client.Do(req)
+			if err != nil {
+				log.Println(err)
+			}
+			if resp.StatusCode != http.StatusOK {
+				log.Printf("%s: %s", r.url, resp.Status)
+				resp.Body.Close()
+				continue
+			}
+
+			urls := findHtmlHrefNode(resp.Body)
+			for _, fileUrl := range urls {
+				if strings.HasPrefix(a, "/f/") {
+					files = append(files, fileUrl)
+				}
+			}
+			resp.Body.Close()
+
+			pages[page] = true
+
+		}
+	}
+
+	fmt.Println("total files: ", len(files))
+
+	var wg sync.WaitGroup
+	limit := make(chan struct{}, r.albumMaxWorker)
+	for i := range files {
+		wg.Add(1)
+		go func(i int) {
+			defer wg.Done()
+			limit <- struct{}{}
+
+			b := *r
+			b.url = files[i]
+			err = b.download()
+			if err != nil {
+				log.Println(err)
+			}
+
+			<-limit
+		}(i)
+	}
+	wg.Wait()
+}
+
+func findHtmlHrefNode(body io.Reader) []string {
+	z := html.NewTokenizer(body)
+	var links []string
+	for {
+		tt := z.Next()
+		switch tt {
+		case html.ErrorToken:
+			return links
+		case html.StartTagToken, html.SelfClosingTagToken:
+			t := z.Token()
+			if t.Data == "a" {
+				for _, attr := range t.Attr {
+					if attr.Key == "href" {
+						links = append(links, attr.Val)
+					}
+				}
+			}
+		default:
+		}
+	}
 }
 
 func (r *Bunkr) download() error {
@@ -271,7 +390,7 @@ func downloadChunk(id int, url string, file *os.File, tasks <-chan Task, wg *syn
 			log.Printf("piece: %d downloaded\n", task.chunkIndex)
 			continue
 		}
-		log.Printf("thread %d starting...\n", id)
+		log.Printf("worker-%d starting...\n", id)
 
 		for {
 			req, _ := http.NewRequest(http.MethodGet, url, nil)

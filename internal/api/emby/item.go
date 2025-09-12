@@ -58,6 +58,17 @@ func RefreshItem(item string, params url.Values) error {
 	}
 }
 
+func RefreshItemByItemId(itemID string) error {
+	params := url.Values{
+		"Recursive":           {"true"},
+		"MetadataRefreshMode": {"FullRefresh"},
+		"ImageRefreshMode":    {"FullRefresh"},
+		"ReplaceAllMetadata":  {"true"},
+		"ReplaceAllImages":    {"true"},
+	}
+	return RefreshItem(itemID, params)
+}
+
 func ResetItemMetadata(item string) error {
 	params := url.Values{
 		"ItemIds": []string{item},

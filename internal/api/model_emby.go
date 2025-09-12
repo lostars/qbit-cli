@@ -36,9 +36,10 @@ type EmbyItem struct {
 		Primary string `json:"Primary"`
 		Logo    string `json:"Logo"`
 	} `json:"ImageTags"`
-	BackdropImageTags []string         `json:"BackdropImageTags"`
-	Overview          string           `json:"Overview"`
-	People            []EmbyItemPeople `json:"People"`
+	BackdropImageTags []string          `json:"BackdropImageTags"`
+	Overview          string            `json:"Overview"`
+	People            []EmbyItemPeople  `json:"People"`
+	ProviderIds       map[string]string `json:"ProviderIds"`
 }
 
 type EmbyItemPeople struct {

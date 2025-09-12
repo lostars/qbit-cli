@@ -143,7 +143,7 @@ func ItemList() *cobra.Command {
 		params := url.Values{
 			"Limit":      []string{strconv.FormatInt(int64(limit), 10)},
 			"StartIndex": []string{strconv.FormatInt(int64(start), 10)},
-			"Fields":     []string{"PremiereDate", "ProductionYear", "Overview", "DateCreated", "People"},
+			"Fields":     []string{"PremiereDate", "ProductionYear", "Overview", "DateCreated", "People", "ProviderIds"},
 		}
 		if hasOverview == 1 {
 			params.Add("HasOverview", "true")

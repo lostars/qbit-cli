@@ -110,10 +110,10 @@ func ItemList() *cobra.Command {
 	}
 
 	var (
-		searchTerm                          string
-		genreIds                            string
-		limit, minWidth, maxWidth, parentId int
-		hasOverview                         int
+		searchTerm                                 string
+		genreIds                                   string
+		start, limit, minWidth, maxWidth, parentId int
+		hasOverview                                int
 	)
 	includeItemTypes := FlagsProperty[string]{Flag: "include-item-types", Options: itemTypes}
 	excludeItemTypes := FlagsProperty[string]{Flag: "exclude-item-types", Options: itemTypes}
@@ -127,6 +127,7 @@ func ItemList() *cobra.Command {
 	cmd.Flags().StringVar(&genreIds, "genre-ids", "", "genres id separated by comma")
 	cmd.Flags().StringVar(&searchTerm, "search-term", "", "keywords")
 	cmd.Flags().IntVar(&limit, "limit", 50, "results limit")
+	cmd.Flags().IntVar(&start, "start", 0, "results start index")
 	cmd.Flags().IntVar(&minWidth, "min-width", 0, "item min width")
 	cmd.Flags().IntVar(&maxWidth, "max-width", 0, "item max width")
 	cmd.Flags().IntVar(&parentId, "parent-id", 0, "parent id")
@@ -140,8 +141,9 @@ func ItemList() *cobra.Command {
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		params := url.Values{
-			"Limit":  []string{strconv.FormatInt(int64(limit), 10)},
-			"Fields": []string{"PremiereDate", "ProductionYear", "Overview", "DateCreated", "People"},
+			"Limit":      []string{strconv.FormatInt(int64(limit), 10)},
+			"StartIndex": []string{strconv.FormatInt(int64(start), 10)},
+			"Fields":     []string{"PremiereDate", "ProductionYear", "Overview", "DateCreated", "People"},
 		}
 		if hasOverview == 1 {
 			params.Add("HasOverview", "true")
@@ -215,10 +217,10 @@ func ItemList() *cobra.Command {
 		}
 		utils.PrintListWithColWidth(headers, &data, map[int]int{1: 50}, false)
 		for _, item := range noPeopleList {
-			log.Printf("no people found: %s\n", item.Name)
+			log.Printf("no people found: [%s] %s\n", item.ID, item.Name)
 		}
 		for _, item := range noBackdropList {
-			log.Printf("no backdrop found: %s\n", item.Name)
+			log.Printf("no backdrop found: [%s] %s\n", item.ID, item.Name)
 		}
 
 		return nil

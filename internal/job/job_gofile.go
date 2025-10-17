@@ -1,6 +1,8 @@
 package job
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -21,11 +23,11 @@ import (
 )
 
 type Gofile struct {
-	maxWorker int
-	savePath  string
-	client    *http.Client
-	url, code string
-	wt, token string
+	maxWorker           int
+	savePath            string
+	client              *http.Client
+	url, code, password string
+	wt, token           string
 }
 
 var gofile Gofile
@@ -50,10 +52,14 @@ func (r *Gofile) RunCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "gofile <url>",
 		Short: "Resolve Gofile file share url and download.",
-		Args:  cobra.ExactArgs(1),
+		Long: `Anonymous download support now. 
+For free accounts, traffic is counted by IP address. 
+If you're using a shared IP address, this may include additional traffic beyond your own usage.`,
+		Args: cobra.ExactArgs(1),
 	}
 
 	cmd.Flags().StringVar(&gofile.savePath, "save-path", "", "file save path, default is current working directory")
+	cmd.Flags().StringVarP(&gofile.password, "password", "p", "", "url share password")
 	cmd.Flags().IntVar(&gofile.maxWorker, "max-worker", 2, "max worker number, if u get too many requests error, set it smaller or 1")
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
@@ -92,7 +98,7 @@ func (r *Gofile) RunCommand() *cobra.Command {
 			return errors.New("contents return " + contents.Status)
 		}
 		if len(contents.Data.Children) <= 0 {
-			return errors.New("contents is empty")
+			return errors.New("contents is empty, maybe need a password")
 		}
 
 		downloader := utils.HttpFileDownloader{
@@ -230,6 +236,10 @@ func (r *Gofile) getFiles() *GofileContentsResp {
 		"pageSize":      {"1000"},
 		"sortField":     {"name"},
 		"sortDirection": {"1"},
+	}
+	if r.password != "" {
+		sumBytes := sha256.Sum256([]byte(r.password))
+		params.Set("password", hex.EncodeToString(sumBytes[:]))
 	}
 	req, _ := http.NewRequest(http.MethodGet, contentsApi+"?"+params.Encode(), nil)
 	req.Header.Set("Authorization", "Bearer "+r.token)

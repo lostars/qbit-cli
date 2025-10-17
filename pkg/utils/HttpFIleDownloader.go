@@ -122,17 +122,11 @@ func (d *HttpFileDownloader) fileExist(file string) bool {
 func (d *HttpFileDownloader) SingleThreadDownload(url, newName string) error {
 	d.init()
 
-	if newName == "" {
-		paths := strings.Split(url, "/")
-		newName = paths[len(paths)-1]
-	}
-
-	var fullName = path.Join(d.SavePath, newName)
-	if d.fileExist(fullName) && !d.OverwriteExistFile {
-		d.InfoLogger.Printf("[%s] exists, %s skipped\n", fullName, url)
+	if d.skipDownload(url, newName) {
 		return nil
 	}
 
+	var fullName = path.Join(d.SavePath, newName)
 	var tmpFile = fullName + tmpFileSuffix
 	out, err := os.Create(tmpFile)
 	if err != nil {
@@ -190,9 +184,7 @@ type task struct {
 	chunkIndex int64
 }
 
-func (d *HttpFileDownloader) Download(url, newName string) error {
-	d.init()
-
+func (d *HttpFileDownloader) skipDownload(url, newName string) bool {
 	if newName == "" {
 		paths := strings.Split(url, "/")
 		newName = paths[len(paths)-1]
@@ -200,6 +192,15 @@ func (d *HttpFileDownloader) Download(url, newName string) error {
 	var fullName = path.Join(d.SavePath, newName)
 	if d.fileExist(fullName) && !d.OverwriteExistFile {
 		d.InfoLogger.Printf("[%s] exists, %s skipped\n", fullName, url)
+		return true
+	}
+	return false
+}
+
+func (d *HttpFileDownloader) Download(url, newName string) error {
+	d.init()
+
+	if d.skipDownload(url, newName) {
 		return nil
 	}
 
@@ -215,6 +216,7 @@ func (d *HttpFileDownloader) Download(url, newName string) error {
 	}
 
 	// range download
+	var fullName = path.Join(d.SavePath, newName)
 	var tmpFile = fullName + tmpFileSuffix
 	var total = headInfo.ContentLength
 	file, err := os.OpenFile(tmpFile, os.O_CREATE|os.O_RDWR, 0644)
@@ -234,6 +236,7 @@ func (d *HttpFileDownloader) Download(url, newName string) error {
 	if metaBytes, err := os.ReadFile(metadataFile); err == nil {
 		_ = json.Unmarshal(metaBytes, &metadata)
 	}
+	d.DebugLogger.Printf("metadata loaded: %v\n", len(metadata))
 	saveMetadata := func(chunkIndex int64) error {
 		metadataLock.Lock()
 		defer metadataLock.Unlock()
@@ -354,7 +357,7 @@ func (d *HttpFileDownloader) Download(url, newName string) error {
 		return fmt.Errorf("failed to rename tmp file: %w", err)
 	}
 	// rm metadata file
-	if err = os.Remove(fullName + metadataFileSuffix); err != nil {
+	if err = os.Remove(metadataFile); err != nil {
 		d.DebugLogger.Printf("warning: failed to remove metadata file: %v\n", err)
 	}
 

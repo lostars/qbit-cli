@@ -9,8 +9,10 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+	"os"
 	"path"
 	"qbit-cli/internal/api"
+	"qbit-cli/internal/config"
 	"qbit-cli/pkg/utils"
 	"regexp"
 	"sort"
@@ -99,6 +101,9 @@ func (r *Gofile) RunCommand() *cobra.Command {
 			Headers: map[string]string{
 				"Authorization": "Bearer " + gofile.token,
 			},
+		}
+		if config.Debug {
+			downloader.DebugLogger = log.New(os.Stdout, "[HttpFileDownloader]: ", log.LstdFlags)
 		}
 
 		// download file

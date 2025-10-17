@@ -15,6 +15,8 @@ import (
 	"os"
 	"path/filepath"
 	"qbit-cli/internal/api"
+	"qbit-cli/internal/config"
+	"qbit-cli/pkg/utils"
 	"regexp"
 	"strconv"
 	"strings"
@@ -223,6 +225,18 @@ func (r *Bunkr) download() error {
 	}
 	fullPath := filepath.Join(r.savePath, filename)
 	start := time.Now()
+
+	downloader := utils.HttpFileDownloader{
+		SavePath:  r.savePath,
+		MaxWorker: r.maxWorker,
+		Headers: map[string]string{
+			"Referer": downloadHost,
+		},
+	}
+	if config.Debug {
+		downloader.DebugLogger = log.New(os.Stdout, "[HttpFileDownloader]: ", log.LstdFlags)
+	}
+
 	if encryptedFile.Encrypted {
 
 		decrypted, err := decryptBunkrFile(encryptedFile, filename)
@@ -231,13 +245,12 @@ func (r *Bunkr) download() error {
 		}
 		log.Printf("decrypted url: %s\n", decrypted)
 
-		err = downloadFile(r.client, decrypted, fullPath)
+		err = downloader.Download(decrypted, filename)
 		if err != nil {
 			return err
 		}
-
 	} else {
-		err = downloadFile(r.client, r.url, fullPath)
+		err = downloader.Download(r.url, filename)
 		if err != nil {
 			return err
 		}
@@ -302,216 +315,6 @@ type EncryptedBunkrFile struct {
 }
 
 var downloadHost = "https://get.bunkrr.su"
-
-func rangeDownload(url string, file *os.File, total, chunkSize int64) {
-	if err := file.Truncate(total); err != nil {
-		fmt.Println(err)
-		return
-	}
-
-	tasks := make(chan Task, bunkr.maxWorker)
-	var wg sync.WaitGroup
-
-	for i := 0; i < bunkr.maxWorker; i++ {
-		wg.Add(1)
-		go downloadChunk(i, url, file, tasks, &wg)
-	}
-
-	// load metadata
-	var metadata map[int64]bool
-	metaFile, err := os.Open(file.Name() + metadataSuffix)
-	if err != nil {
-		log.Println("download metadata not found")
-		metadata = make(map[int64]bool, total/chunkSize+1)
-	} else {
-		err = json.NewDecoder(metaFile).Decode(&metadata)
-		if err != nil {
-			log.Println("wrong format of metadata")
-			metadata = make(map[int64]bool, total/chunkSize+1)
-		}
-		metaFile.Close()
-	}
-
-	lock := &sync.Mutex{}
-
-	chunkIndex := int64(0)
-	for start := int64(0); start < total; start += chunkSize {
-		end := start + chunkSize - 1
-		if end >= total {
-			end = total - 1
-		}
-		tasks <- Task{
-			start: start, end: end,
-			metadata: &metadata, lock: lock,
-			chunkIndex: chunkIndex,
-		}
-		chunkIndex++
-	}
-	close(tasks)
-	wg.Wait()
-}
-
-type Task struct {
-	start, end int64
-	chunkIndex int64
-	metadata   *map[int64]bool
-	lock       *sync.Mutex
-}
-
-func (t *Task) saveMetadata(metaFile string) {
-	t.lock.Lock()
-
-	meta := *t.metadata
-	meta[t.chunkIndex] = true
-	t.metadata = &meta
-
-	// save to file
-	f, _ := os.Create(metaFile)
-	defer f.Close()
-	_ = json.NewEncoder(f).Encode(meta)
-
-	t.lock.Unlock()
-}
-
-func (t *Task) downloadCompleted() bool {
-	t.lock.Lock()
-	defer t.lock.Unlock()
-	meta := *t.metadata
-	return meta[t.chunkIndex]
-}
-
-var metadataSuffix = ".metadata"
-
-func downloadChunk(id int, url string, file *os.File, tasks <-chan Task, wg *sync.WaitGroup) {
-	defer wg.Done()
-
-	for task := range tasks {
-		if task.downloadCompleted() {
-			log.Printf("piece: %d downloaded\n", task.chunkIndex)
-			continue
-		}
-		log.Printf("worker-%d starting...\n", id)
-
-		for {
-			req, _ := http.NewRequest(http.MethodGet, url, nil)
-			req.Header.Set("referer", downloadHost)
-			req.Header.Set("Range", fmt.Sprintf("bytes=%d-%d", task.start, task.end))
-
-			client := &http.Client{Timeout: time.Minute * 60}
-			resp, err := client.Do(req)
-			if err != nil {
-				fmt.Println(err)
-				continue
-			}
-
-			if resp.StatusCode == http.StatusTooManyRequests {
-				resp.Body.Close()
-				time.Sleep(time.Second << 2)
-				continue
-			}
-
-			if resp.StatusCode != http.StatusPartialContent && resp.StatusCode != http.StatusOK {
-				fmt.Println("unexpected status: ", resp.Status)
-				resp.Body.Close()
-				continue
-			}
-
-			writeRespToFile(resp, file, task.start)
-			resp.Body.Close()
-			task.saveMetadata(file.Name() + metadataSuffix)
-			break
-		}
-
-	}
-
-}
-
-func writeRespToFile(resp *http.Response, file *os.File, begin int64) {
-	buf := make([]byte, 32*1024)
-	start := begin
-	for {
-		n, err := resp.Body.Read(buf)
-		if n > 0 {
-			_, err := file.WriteAt(buf[:n], start)
-			if err != nil {
-				continue
-			}
-			start += int64(n)
-		}
-		if err == io.EOF {
-			break
-		}
-	}
-}
-
-var chunkSize int64 = 10 * 1024 * 1024
-
-func downloadFile(client *http.Client, url string, file string) error {
-	// check file if exists
-	_, err := os.Stat(file)
-	if err == nil {
-		return errors.New("file exists: " + file)
-	}
-
-	req, _ := http.NewRequest(http.MethodGet, url, nil)
-	req.Header.Set("referer", downloadHost)
-
-	req.Header.Set("Range", "bytes=0-0")
-	headResp, err := client.Do(req)
-	rangeD := false
-	size := int64(0)
-	if err == nil {
-		defer headResp.Body.Close()
-		// Content-Range bytes 0-0/397540573
-		contentRange := headResp.Header.Get("Content-Range")
-		if contentRange != "" {
-			_, err = fmt.Sscanf(contentRange, "bytes 0-0/%d", &size)
-			if err != nil {
-				log.Println("failed to parse Content-Length, fallback to single thread download")
-			} else {
-				if size > chunkSize {
-					rangeD = true
-				} else {
-					log.Println("file too small, fallback to single thread download")
-				}
-			}
-		}
-	} else {
-		log.Println(err)
-	}
-
-	tmpFile := file + ".downloading"
-	if rangeD {
-		out, err := os.OpenFile(tmpFile, os.O_CREATE|os.O_RDWR, 0644)
-		if err != nil {
-			return err
-		}
-		rangeDownload(url, out, size, chunkSize)
-	} else {
-		out, err := os.Create(tmpFile)
-		if err != nil {
-			return err
-		}
-		req.Header.Del("Range")
-		resp, err := client.Do(req)
-		if err != nil {
-			return err
-		}
-		defer resp.Body.Close()
-
-		_, err = io.Copy(out, resp.Body)
-		if err != nil {
-			return err
-		}
-	}
-
-	// rename file
-	_ = os.Rename(tmpFile, file)
-	// rm metadata file
-	os.Remove(tmpFile + metadataSuffix)
-
-	return nil
-}
 
 func getShareFilename(client *http.Client, url string) (string, error) {
 	resp, err := client.Get(url)

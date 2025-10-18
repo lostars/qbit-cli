@@ -71,7 +71,7 @@ this option will find all jp video's 4k version which is filter by extra jp code
 
 	cmd.Flags().StringSliceVar(&excludeUrls, "exclude-urls", []string{}, `exclude certain search urls, using contains`)
 
-	cmd.Flags().IntVar(&maxParallelism, "max-parallelism", 2, "max parallelism")
+	cmd.Flags().IntVar(&maxParallelism, "max-parallelism", 1, "max parallelism")
 
 	cmd.Flags().IntVar(&parentId, "parent-id", 0, "emby item parent id")
 

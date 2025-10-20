@@ -6,8 +6,8 @@ import (
 	"log"
 	"net/url"
 	"path/filepath"
-	"qbit-cli/cmd"
 	"qbit-cli/internal/api"
+	cmd2 "qbit-cli/internal/cmd"
 	"regexp"
 	"strings"
 	"time"
@@ -50,9 +50,9 @@ func (r *RenameJP) RunCommand() *cobra.Command {
 		renameTorrent         bool
 	)
 
-	state := cmd.FlagsProperty[string]{Flag: "state", Options: cmd.TorrentState}
+	state := cmd2.FlagsProperty[string]{Flag: "state", Options: cmd2.TorrentState}
 
-	jp.Flags().StringVar(&state.Value, state.Flag, "", "state filter:\n"+strings.Join(cmd.TorrentState, ","))
+	jp.Flags().StringVar(&state.Value, state.Flag, "", "state filter:\n"+strings.Join(cmd2.TorrentState, ","))
 	jp.Flags().StringVar(&category, "category", "", "category filter")
 	jp.Flags().StringVar(&tag, "tag", "", "tag filter")
 	jp.Flags().StringVar(&hashes, "hashes", "", "hash filter separated by |'")

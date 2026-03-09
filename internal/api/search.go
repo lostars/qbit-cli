@@ -41,11 +41,11 @@ func SearchDetails(d time.Duration, resultID uint32) ([]*SearchDetail, error) {
 	for status == "Running" {
 		time.Sleep(d)
 
-		var offset uint32 = 0
 		params := url.Values{}
 		params.Set("id", strconv.FormatUint(uint64(resultID), 10))
 		params.Set("limit", strconv.Itoa(500))
-		params.Set("offset", strconv.FormatUint(uint64(offset), 10))
+		// 通过状态来判断搜索是否结束 不使用offset分页获取结果
+		params.Set("offset", "0")
 
 		resp, err := client.Get("/api/v2/search/results", params)
 		if err != nil {
@@ -62,7 +62,6 @@ func SearchDetails(d time.Duration, resultID uint32) ([]*SearchDetail, error) {
 		}
 
 		status = result.Status
-		offset = result.Total
 		if result.Total > 0 && len(result.Results) > 0 {
 			for _, r := range result.Results {
 				m[r.FileName] = r

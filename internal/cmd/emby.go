@@ -3,7 +3,6 @@ package cmd
 import (
 	"errors"
 	"fmt"
-	"log"
 	"net/url"
 	"qbit-cli/internal/api"
 	"qbit-cli/internal/api/emby"
@@ -115,12 +114,14 @@ func ItemList() *cobra.Command {
 		genreIds                                   string
 		start, limit, minWidth, maxWidth, parentId int
 		hasOverview                                int
+		emptyActorItem                             bool
 	)
 	includeItemTypes := FlagsProperty[string]{Flag: "include-item-types", Options: itemTypes}
 	excludeItemTypes := FlagsProperty[string]{Flag: "exclude-item-types", Options: itemTypes}
 	sortOrder := FlagsProperty[string]{Flag: "sort-order", Options: sortOrders}
 	sortBy := FlagsProperty[string]{Flag: "sort-by", Options: sortBys}
 
+	cmd.Flags().BoolVar(&emptyActorItem, "empty-actor-item", false, "filter empty actor items")
 	cmd.Flags().StringVar(&sortBy.Value, sortBy.Flag, "", `Options: `+strings.Join(sortBys, ","))
 	cmd.Flags().StringVar(&sortOrder.Value, sortOrder.Flag, "", "Sort Order: "+strings.Join(sortOrders, "|"))
 	cmd.Flags().StringVar(&includeItemTypes.Value, includeItemTypes.Flag, "", `Comma separated list of item types: `+strings.Join(itemTypes, ","))
@@ -141,10 +142,14 @@ func ItemList() *cobra.Command {
 	sortOrder.RegisterCompletion(cmd)
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
+		fields := []string{"PremiereDate", "ProductionYear", "Overview", "DateCreated", "People", "ProviderIds"}
+		if emptyActorItem {
+			fields = append(fields, "People")
+		}
 		params := url.Values{
 			"Limit":      []string{strconv.FormatInt(int64(limit), 10)},
 			"StartIndex": []string{strconv.FormatInt(int64(start), 10)},
-			"Fields":     []string{"PremiereDate", "ProductionYear", "Overview", "DateCreated", "People", "ProviderIds"},
+			"Fields":     fields,
 		}
 		switch hasOverview {
 		case 1:
@@ -190,23 +195,33 @@ func ItemList() *cobra.Command {
 		if len(items.Items) <= 0 {
 			return nil
 		}
-
 		size := items.TotalRecordCount
+
+		emptyActorItems := make([]api.EmbyItem, 0, len(items.Items))
+		if emptyActorItem {
+			for _, item := range items.Items {
+				hasActor := false
+				for _, p := range item.People {
+					if p.IsActor() {
+						hasActor = true
+						break
+					}
+				}
+				if !hasActor {
+					emptyActorItems = append(emptyActorItems, item)
+				}
+			}
+			items.Items = emptyActorItems
+			size = len(emptyActorItems)
+		}
+
 		if size <= 0 {
 			size = len(items.Items)
 		}
 		fmt.Printf("total items: %d\n", size)
 		headers := []string{"ID", "Name", "Type", "IDX", "Created"}
 		var data = make([][]string, len(items.Items))
-		var noPeopleList []api.EmbyItem
-		var noBackdropList []api.EmbyItem
 		for i, item := range items.Items {
-			if len(item.People) <= 0 {
-				noPeopleList = append(noPeopleList, item)
-			}
-			if len(item.BackdropImageTags) <= 0 {
-				noBackdropList = append(noBackdropList, item)
-			}
 			create := ""
 			if !item.CreatedDate.IsZero() {
 				create = item.CreatedDate.Format("2006-01-02")
@@ -218,12 +233,6 @@ func ItemList() *cobra.Command {
 			data[i] = []string{item.ID, item.Name, item.Type, idx, create}
 		}
 		utils.PrintListWithColWidth(headers, &data, map[int]int{1: 50}, false)
-		for _, item := range noPeopleList {
-			log.Printf("no people found: [%s] %s\n", item.ID, item.Name)
-		}
-		for _, item := range noBackdropList {
-			log.Printf("no backdrop found: [%s] %s\n", item.ID, item.Name)
-		}
 
 		return nil
 	}

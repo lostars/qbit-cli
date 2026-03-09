@@ -49,6 +49,10 @@ type EmbyItemPeople struct {
 	PrimaryImageTag string `json:"PrimaryImageTag"`
 }
 
+func (p *EmbyItemPeople) IsActor() bool {
+	return p.Type == "Actor"
+}
+
 func (item *EmbyItem) IsMovie() bool {
 	return item.Type == "Movie"
 }

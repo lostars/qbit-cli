@@ -79,7 +79,7 @@ func (d *HttpFileDownloader) head(url string) (*ServerHeadResult, error) {
 		d.DebugLogger.Printf("head do request error: %v\n", err)
 		return nil, err
 	}
-	defer headResp.Body.Close()
+	defer SafeClose(headResp.Body)
 
 	var info = ServerHeadResult{
 		URL:                        url,
@@ -113,10 +113,7 @@ func (i *ServerHeadResult) ResumeAvailable() bool {
 
 func (d *HttpFileDownloader) fileExist(file string) bool {
 	_, err := os.Stat(file)
-	if err == nil {
-		return true
-	}
-	return false
+	return err == nil
 }
 
 func (d *HttpFileDownloader) SingleThreadDownload(url, newName string) error {
@@ -140,7 +137,7 @@ func (d *HttpFileDownloader) SingleThreadDownload(url, newName string) error {
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
+	defer SafeClose(resp.Body)
 
 	_, err = io.Copy(out, resp.Body)
 	if err != nil {
@@ -223,7 +220,7 @@ func (d *HttpFileDownloader) Download(url, newName string) error {
 	if err != nil {
 		return err
 	}
-	defer file.Close()
+	defer SafeClose(file)
 	if err := file.Truncate(total); err != nil {
 		d.DebugLogger.Printf("truncate file error: %v\n", err)
 		return err
@@ -285,24 +282,24 @@ func (d *HttpFileDownloader) Download(url, newName string) error {
 					}
 
 					if resp.StatusCode == http.StatusTooManyRequests {
-						resp.Body.Close()
+						SafeClose(resp.Body)
 						time.Sleep(time.Second << 2)
 						d.DebugLogger.Printf("unexpected status: %v\n", resp.Status)
 						continue
 					}
 					if resp.StatusCode >= 400 && resp.StatusCode < 500 {
 						d.DebugLogger.Printf("stop download, unexpected client status: %v\n", resp.Status)
-						resp.Body.Close()
+						SafeClose(resp.Body)
 						break
 					}
 					if resp.StatusCode != http.StatusPartialContent {
 						d.DebugLogger.Printf("unexpected status: %v\n", resp.Status)
-						resp.Body.Close()
+						SafeClose(resp.Body)
 						continue
 					}
 
 					err = writeParts(resp, file, t.start)
-					resp.Body.Close()
+					SafeClose(resp.Body)
 					if err != nil {
 						d.DebugLogger.Printf("worker-%d: attempt %d, failed to write chunk %d to file: %v\n", i, attempt+1, t.chunkIndex, err)
 						continue

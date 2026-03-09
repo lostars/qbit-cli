@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"qbit-cli/pkg/utils"
 	"strconv"
 )
 
@@ -20,7 +21,7 @@ func RssAddSub(feedUrl string, path string) error {
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
+	defer utils.SafeClose(resp.Body)
 
 	if resp.StatusCode != http.StatusOK {
 		return &QbitClientError{resp.Status, "RssAddSub", nil}
@@ -34,7 +35,7 @@ func RssRuleList() (map[string]*RssRule, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer utils.SafeClose(resp.Body)
 
 	var results map[string]*RssRule
 	if err := ParseJSON(resp, &results); err != nil {
@@ -72,7 +73,7 @@ func RssAllItems(withData bool) (map[string]RssSub, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer utils.SafeClose(resp.Body)
 
 	var results map[string]RssSub
 	if err := ParseJSON(resp, &results); err != nil {
@@ -86,7 +87,7 @@ func RssRmSub(path string) error {
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
+	defer utils.SafeClose(resp.Body)
 	if resp.StatusCode != http.StatusOK {
 		return &QbitClientError{resp.Status, "RssRmSub", nil}
 	}

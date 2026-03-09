@@ -2,7 +2,6 @@ package job
 
 import (
 	"fmt"
-	"github.com/spf13/cobra"
 	"log"
 	"net/url"
 	"qbit-cli/internal/api"
@@ -13,6 +12,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/spf13/cobra"
 )
 
 type JP4K struct {
@@ -97,7 +98,7 @@ this option will find all jp video's 4k version which is filter by extra jp code
 
 		items := fourKItems(searchParams)
 		items = append(items, searchExtraCodes(extraCodes)...)
-		if items == nil || len(items) <= 0 {
+		if len(items) <= 0 {
 			fmt.Println("no 4k items found")
 			return nil
 		}

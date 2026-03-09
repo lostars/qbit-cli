@@ -2,6 +2,7 @@ package api
 
 import (
 	"net/url"
+	"qbit-cli/pkg/utils"
 	"strings"
 )
 
@@ -16,7 +17,7 @@ func JackettSearch(indexer string, category []string, query string) (*JackettRes
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer utils.SafeClose(resp.Body)
 	var result JackettResults
 	err = ParseJSON(resp, &result)
 	if err != nil {
@@ -30,7 +31,7 @@ func JackettIndexers(enabled bool) (*[]JackettIndexer, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer utils.SafeClose(resp.Body)
 	var result []JackettIndexer
 	err = ParseJSON(resp, &result)
 	if err != nil {

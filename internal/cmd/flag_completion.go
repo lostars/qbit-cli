@@ -1,9 +1,10 @@
 package cmd
 
 import (
-	"github.com/spf13/cobra"
 	"qbit-cli/internal/api"
 	"strings"
+
+	"github.com/spf13/cobra"
 )
 
 type FlagsProperty[T any] struct {
@@ -18,7 +19,7 @@ type FlagsPropertyRegister interface {
 }
 
 func (f *FlagsProperty[T]) RegisterCompletion(cmd *cobra.Command) {
-	if f.Options != nil && len(f.Options) > 0 {
+	if len(f.Options) > 0 {
 		_ = cmd.RegisterFlagCompletionFunc(f.Flag, func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
 			return f.Options, cobra.ShellCompDirectiveNoFileComp
 		})

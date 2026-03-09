@@ -4,8 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/spf13/cobra"
 	"net/url"
 	"qbit-cli/internal/api"
 	"qbit-cli/internal/config"
@@ -14,6 +12,9 @@ import (
 	"sort"
 	"strconv"
 	"time"
+
+	tea "github.com/charmbracelet/bubbletea"
+	"github.com/spf13/cobra"
 )
 
 // https://github.com/qbittorrent/qBittorrent/wiki/WebUI-API-(qBittorrent-5.0)#search
@@ -104,7 +105,7 @@ make sure you plugin is valid and enabled`)
 			}
 		}
 
-		var urls []string
+		//var urls []string
 		var printList = make([]*api.SearchDetail, 0, len(results))
 		for _, r := range results {
 			if re == nil {
@@ -112,7 +113,7 @@ make sure you plugin is valid and enabled`)
 			} else {
 				if re.MatchString(r.FileName) {
 					printList = append(printList, r)
-					urls = append(urls, r.FileURL)
+					//urls = append(urls, r.FileURL)
 				}
 			}
 		}

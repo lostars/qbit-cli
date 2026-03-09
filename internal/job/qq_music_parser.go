@@ -9,7 +9,6 @@ import (
 	"log"
 	"net/http"
 	"net/url"
-	"os"
 	"path/filepath"
 	"qbit-cli/internal/config"
 	"qbit-cli/pkg/utils"
@@ -202,19 +201,19 @@ func (parser *QQMusicParser) parseSong(id string) error {
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
+	defer utils.SafeClose(resp.Body)
 
 	var result QQMusicParseResult
 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
 		return err
 	}
 	if result.Code != 0 || result.Req1.Data.Sip == nil || len(result.Req1.Data.Sip) == 0 {
-		return errors.New(fmt.Sprintf("parse error %d", result.Code))
+		return fmt.Errorf("parse error %d", result.Code)
 	}
 	// even if u get a VIP, some songs still lack some quality.
 	if result.Req1.Data.MidUrlInfo[0].PUrl == "" {
-		return errors.New(fmt.Sprintf("songMid: %s %s, parse error: need a VIP or change another quality",
-			songMid, parserConfig.quality))
+		return fmt.Errorf("songMid: %s %s, parse error: need a VIP or change another quality",
+			songMid, parserConfig.quality)
 	}
 
 	// download audio file
@@ -239,7 +238,7 @@ func (parser *QQMusicParser) parseSong(id string) error {
 		if err != nil {
 			return err
 		}
-		defer os.Remove(albumPicPath)
+		defer utils.SafeRemoveFile(albumPicPath)
 	}
 	// get lyrics
 	lrc, err := getLyrics(parser.songInfo.ID)
@@ -251,7 +250,7 @@ func (parser *QQMusicParser) parseSong(id string) error {
 		return err
 	}
 	l := string(lyrics)
-	if strings.Index(l, "此歌曲为没有填词的纯音乐") >= 0 {
+	if strings.Contains(l, "此歌曲为没有填词的纯音乐") {
 		l = ""
 	}
 	// save metadata
@@ -299,7 +298,7 @@ func getPlaylist(id string) (*QQMusicPlaylist, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer utils.SafeClose(resp.Body)
 
 	var result QQMusicPlaylistResult
 	if err = json.NewDecoder(resp.Body).Decode(&result); err != nil {
@@ -332,7 +331,7 @@ func getAlbum(id string) (*QQMusicAlbum, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer utils.SafeClose(resp.Body)
 
 	var result QQMusicAlbumResult
 	if err = json.NewDecoder(resp.Body).Decode(&result); err != nil {
@@ -405,14 +404,14 @@ func getLyrics(songId int64) (*QQMusicSongLyric, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer utils.SafeClose(resp.Body)
 
 	var result QQMusicParseResult
 	if err = json.NewDecoder(resp.Body).Decode(&result); err != nil {
 		return nil, err
 	}
 	if result.Code != 0 || result.Lyric.Code != 0 {
-		return nil, errors.New(fmt.Sprintf("%d get lyrics error: %d, %d", songId, result.Code, result.Lyric.Code))
+		return nil, fmt.Errorf("%d get lyrics error: %d, %d", songId, result.Code, result.Lyric.Code)
 	}
 
 	return &result.Lyric, nil
@@ -441,7 +440,7 @@ func songInfo(id string) (*QQMusicSongInfo, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer utils.SafeClose(resp.Body)
 
 	var result QQMusicSongInfoResult
 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {

@@ -4,8 +4,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/spf13/cobra"
 	"qbit-cli/internal/api"
+
+	"github.com/spf13/cobra"
 )
 
 func RssSub() *cobra.Command {
@@ -61,7 +62,7 @@ func SubAdd() *cobra.Command {
 					return err
 				}
 			} else {
-				return fmt.Errorf("%s add failed by: [%s] not found\n", url, rule)
+				return fmt.Errorf("%s add failed by: [%s] not found", url, rule)
 			}
 		}
 		return nil

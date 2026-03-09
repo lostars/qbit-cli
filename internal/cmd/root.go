@@ -2,11 +2,12 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/spf13/cobra"
 	"io"
 	"log"
 	"os"
 	"qbit-cli/internal/config"
+
+	"github.com/spf13/cobra"
 )
 
 func Execute(version string) {
@@ -36,7 +37,6 @@ same as executable file named config.yaml
 				log.SetFlags(0)
 				log.SetOutput(io.Discard)
 			}
-			return
 		},
 	}
 

@@ -242,7 +242,7 @@ func ParseRawJSON(resp *http.Response) (string, error) {
 
 func (c *QbitClient) Get(endpoint string, params url.Values) (*http.Response, error) {
 	fullUrl := c.host() + endpoint
-	if params != nil && len(params) > 0 {
+	if len(params) > 0 {
 		fullUrl += "?" + params.Encode()
 	}
 	log.Println(fullUrl)

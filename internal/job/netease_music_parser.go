@@ -9,7 +9,6 @@ import (
 	"math/rand"
 	"net/http"
 	"net/url"
-	"os"
 	"path/filepath"
 	"qbit-cli/internal/config"
 	"qbit-cli/pkg/utils"
@@ -86,7 +85,7 @@ func (parser *NeteaseMusicParser) parseAlbum(id string) error {
 		return err
 	}
 	if songs == nil || len(*songs) < 1 {
-		return errors.New(fmt.Sprintf("album %s no songs found", id))
+		return fmt.Errorf("album %s no songs found", id)
 	}
 
 	data := *songs
@@ -118,7 +117,7 @@ func (parser *NeteaseMusicParser) parseSong(id string) error {
 			return err
 		}
 		parser.songInfo = &info.Songs[0]
-		if info.Privileges != nil && len(info.Privileges) > 0 {
+		if len(info.Privileges) > 0 {
 			parser.songPrivilege = &info.Privileges[0]
 		} else {
 			log.Printf("%s no privileges found\n", id)
@@ -170,7 +169,7 @@ func (parser *NeteaseMusicParser) parseSong(id string) error {
 	cover := parserConfig.coverPathFromAudio(filename, albumPic)
 	if albumPic != "" {
 		_ = utils.DownloadUrlToFile(cover, albumPic)
-		defer os.Remove(cover)
+		defer utils.SafeRemoveFile(cover)
 	}
 	// get lyrics
 	lyric := ""
@@ -229,7 +228,7 @@ func albumDetail(albumId int64) (*[]NeteaseSongInfo, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer utils.SafeClose(resp.Body)
 	var album NeteaseAlbumResult
 	if err := json.NewDecoder(resp.Body).Decode(&album); err != nil {
 		fmt.Println(err)
@@ -251,7 +250,7 @@ func playlistDetail(playlistId int64) (*NeteasePlaylistResult, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer utils.SafeClose(resp.Body)
 	var result NeteasePlaylistResult
 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
 		fmt.Println(err)
@@ -290,7 +289,7 @@ func getSongLyrics(id int64) *NeteaseLyricsResult {
 	if err != nil {
 		return nil
 	}
-	defer resp.Body.Close()
+	defer utils.SafeClose(resp.Body)
 	var lyric NeteaseLyricsResult
 	e := json.NewDecoder(resp.Body).Decode(&lyric)
 	if e != nil {
@@ -319,14 +318,14 @@ func getNeteaseSongInfo(ids ...int64) (*NeteaseSongInfoResult, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer utils.SafeClose(resp.Body)
 
 	var info NeteaseSongInfoResult
 	err = json.NewDecoder(resp.Body).Decode(&info)
 	if err != nil {
 		return nil, err
 	}
-	if info.Songs == nil || len(info.Songs) < 1 {
+	if len(info.Songs) < 1 {
 		log.Println("ids: ", ids)
 		return nil, errors.New("no songs found")
 	}
@@ -376,7 +375,7 @@ func getNeteaseSong(id int64, level string) (*NeteaseSong, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer utils.SafeClose(resp.Body)
 
 	var result NeteaseSongResult
 	err = json.NewDecoder(resp.Body).Decode(&result)

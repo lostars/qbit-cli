@@ -2,7 +2,6 @@ package job
 
 import (
 	"fmt"
-	"github.com/spf13/cobra"
 	"log"
 	"net/url"
 	"path/filepath"
@@ -11,6 +10,8 @@ import (
 	"regexp"
 	"strings"
 	"time"
+
+	"github.com/spf13/cobra"
 )
 
 type RenameJP struct{}
@@ -29,7 +30,7 @@ folder/a.mp4
 `
 }
 
-func (_ *RenameJP) Tags() []string {
+func (r *RenameJP) Tags() []string {
 	return []string{"qBittorrent"}
 }
 

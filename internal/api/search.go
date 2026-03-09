@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"qbit-cli/pkg/utils"
 	"strconv"
 	"strings"
 	"time"
@@ -17,7 +18,7 @@ func SearchStart(params url.Values) (SearchResult, error) {
 	if err != nil {
 		return result, err
 	}
-	defer resp.Body.Close()
+	defer utils.SafeClose(resp.Body)
 
 	if resp.StatusCode == http.StatusConflict {
 		return result, &QbitClientError{resp.Status, "SearchStart", nil}
@@ -48,13 +49,13 @@ func SearchDetails(d time.Duration, resultID uint32) ([]*SearchDetail, error) {
 
 		resp, err := client.Get("/api/v2/search/results", params)
 		if err != nil {
-			fmt.Printf(err.Error())
+			fmt.Println(err.Error())
 			break
 		}
 
 		var result SearchResults
 		err = ParseJSON(resp, &result)
-		resp.Body.Close()
+		utils.SafeClose(resp.Body)
 		if err != nil {
 			fmt.Println(err.Error())
 			continue
@@ -82,7 +83,7 @@ func SearchPlugins() (*[]SearchPlugin, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer utils.SafeClose(resp.Body)
 
 	var result []SearchPlugin
 	if err := ParseJSON(resp, &result); err != nil {
@@ -97,7 +98,7 @@ func UpdatePlugin() error {
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
+	defer utils.SafeClose(resp.Body)
 	if resp.StatusCode == http.StatusOK {
 		return &QbitClientError{resp.Status, "UpdatePlugin", nil}
 	}
@@ -111,7 +112,7 @@ func InstallPlugin(sources []string) error {
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
+	defer utils.SafeClose(resp.Body)
 	return nil
 }
 
@@ -122,7 +123,7 @@ func UninstallPlugin(hashes []string) error {
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
+	defer utils.SafeClose(resp.Body)
 	return nil
 }
 
@@ -134,6 +135,6 @@ func EnablePlugin(name []string, enable bool) error {
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
+	defer utils.SafeClose(resp.Body)
 	return nil
 }

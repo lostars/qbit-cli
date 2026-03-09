@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"qbit-cli/pkg/utils"
 	"strconv"
 	"strings"
 )
@@ -18,7 +19,7 @@ func TorrentList(params url.Values) ([]Torrent, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer utils.SafeClose(resp.Body)
 
 	var torrentList []Torrent
 	if err := ParseJSON(resp, &torrentList); err != nil {
@@ -49,9 +50,9 @@ func TorrentAdd(urls []string, params url.Values) error {
 		} else if resp.StatusCode != http.StatusOK {
 			fmt.Println(resp.Status)
 		}
-		resp.Body.Close()
+		utils.SafeClose(resp.Body)
 		for _, file := range localFiles {
-			file.Close()
+			utils.SafeClose(file)
 		}
 	}
 
@@ -61,7 +62,7 @@ func TorrentAdd(urls []string, params url.Values) error {
 		if err != nil {
 			return err
 		}
-		defer resp.Body.Close()
+		defer utils.SafeClose(resp.Body)
 
 		if resp.StatusCode != http.StatusOK {
 			return fmt.Errorf("torrent add fail: %s", resp.Status)
@@ -76,7 +77,7 @@ func TorrentFiles(params url.Values) ([]TorrentFile, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer utils.SafeClose(resp.Body)
 
 	var torrentFiles []TorrentFile
 	if err := ParseJSON(resp, &torrentFiles); err != nil {
@@ -95,7 +96,7 @@ func TorrentRenameFolder(hash string, old string, new string) error {
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
+	defer utils.SafeClose(resp.Body)
 
 	if resp.StatusCode != http.StatusOK {
 		return &QbitClientError{resp.Status, "TorrentRenameFolder", nil}
@@ -113,7 +114,7 @@ func TorrentRenameFile(hash string, old string, new string) error {
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
+	defer utils.SafeClose(resp.Body)
 
 	if resp.StatusCode != http.StatusOK {
 		return &QbitClientError{resp.Status, "TorrentRenameFile", nil}
@@ -130,7 +131,7 @@ func RenameTorrent(hash string, name string) error {
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
+	defer utils.SafeClose(resp.Body)
 	if resp.StatusCode == http.StatusNotFound {
 		return &QbitClientError{"hash is invalid", "TorrentRename", nil}
 	}
@@ -145,7 +146,7 @@ func UpdateTorrent(operation string, params url.Values) error {
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
+	defer utils.SafeClose(resp.Body)
 	if resp.StatusCode != http.StatusOK {
 		return &QbitClientError{resp.Status, "TorrentUpdate: " + operation, nil}
 	}
@@ -157,7 +158,7 @@ func TagList() ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer utils.SafeClose(resp.Body)
 	var tagList []string
 	if err := ParseJSON(resp, &tagList); err != nil {
 		return nil, err
@@ -173,7 +174,7 @@ func TagUpdate(operation string, name []string) error {
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
+	defer utils.SafeClose(resp.Body)
 	return nil
 }
 
@@ -182,7 +183,7 @@ func CategoryList() (*[]TorrentCategory, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer utils.SafeClose(resp.Body)
 	var categories map[string]TorrentCategory
 	if err := ParseJSON(resp, &categories); err != nil {
 		return nil, err
@@ -202,7 +203,7 @@ func CategoryAdd(name string, path string) error {
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
+	defer utils.SafeClose(resp.Body)
 	if resp.StatusCode == http.StatusConflict {
 		return errors.New("category already exists")
 	}
@@ -219,7 +220,7 @@ func CategoryDelete(names []string) error {
 	if err != nil {
 		return err
 	}
-	resp.Body.Close()
+	utils.SafeClose(resp.Body)
 	return nil
 }
 
@@ -231,7 +232,7 @@ func CategoryUpdate(name string, path string) error {
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
+	defer utils.SafeClose(resp.Body)
 	if resp.StatusCode == http.StatusConflict {
 		return errors.New("category not exists")
 	}
@@ -250,7 +251,7 @@ func SetTorrentFilePriority(hash, ids string, priority int) error {
 	if err != nil {
 		return err
 	}
-	resp.Body.Close()
+	utils.SafeClose(resp.Body)
 	if resp.StatusCode == http.StatusConflict {
 		return errors.New("torrent metadata hasn't downloaded yet or at least one file id was not found")
 	}
@@ -268,7 +269,7 @@ func TorrentTrackers(hash string) (*[]TorrentTracker, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer utils.SafeClose(resp.Body)
 	var trackers []TorrentTracker
 	if err := ParseJSON(resp, &trackers); err != nil {
 		return nil, err
@@ -283,7 +284,7 @@ func TorrentPeers(hash string) (*[]TorrentPeer, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer utils.SafeClose(resp.Body)
 	var result PeerResult
 	if err := ParseJSON(resp, &result); err != nil {
 		return nil, err

@@ -6,8 +6,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/spf13/cobra"
-	"golang.org/x/net/html"
 	"io"
 	"log"
 	"net/http"
@@ -22,6 +20,9 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/spf13/cobra"
+	"golang.org/x/net/html"
 )
 
 type Bunkr struct {
@@ -41,7 +42,7 @@ func (r *Bunkr) Description() string {
 	return `Resolve Bunkr file share url and download.`
 }
 
-func (_ *Bunkr) Tags() []string {
+func (r *Bunkr) Tags() []string {
 	return []string{"resolver"}
 }
 
@@ -96,7 +97,7 @@ func (r *Bunkr) albumDownload() {
 	if err != nil {
 		log.Println(err)
 	}
-	defer resp.Body.Close()
+	defer utils.SafeClose(resp.Body)
 	if resp.StatusCode != http.StatusOK {
 		log.Printf("%s: %s", r.url, resp.Status)
 		return
@@ -138,7 +139,7 @@ func (r *Bunkr) albumDownload() {
 			}
 			if resp.StatusCode != http.StatusOK {
 				log.Printf("%s: %s", r.url, resp.Status)
-				resp.Body.Close()
+				utils.SafeClose(resp.Body)
 				continue
 			}
 
@@ -148,7 +149,7 @@ func (r *Bunkr) albumDownload() {
 					files = append(files, fileUrl)
 				}
 			}
-			resp.Body.Close()
+			utils.SafeClose(resp.Body)
 
 			pages[page] = true
 
@@ -255,7 +256,7 @@ func (r *Bunkr) download() error {
 			return err
 		}
 	}
-	cost := time.Now().Sub(start)
+	cost := time.Since(start)
 	fmt.Printf("file saved to: %s, cost: %s\n", fullPath, cost.String())
 	return nil
 }
@@ -272,7 +273,7 @@ func getEncryptFile(client *http.Client, slug string, apiHost string, referer st
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer utils.SafeClose(resp.Body)
 	if resp.StatusCode != http.StatusOK {
 		return nil, errors.New(resp.Status)
 	}
@@ -321,7 +322,7 @@ func getShareFilename(client *http.Client, url string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	defer resp.Body.Close()
+	defer utils.SafeClose(resp.Body)
 	if resp.StatusCode != http.StatusOK {
 		return "", fmt.Errorf("unexpected status code: %d", resp.StatusCode)
 	}

@@ -7,9 +7,6 @@ import (
 	"crypto/md5"
 	"encoding/hex"
 	"fmt"
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
-	"github.com/charmbracelet/lipgloss/table"
 	"io"
 	"log"
 	"net/http"
@@ -19,7 +16,23 @@ import (
 	"strings"
 	"time"
 	"unicode/utf8"
+
+	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
+	"github.com/charmbracelet/lipgloss/table"
 )
+
+func SafeClose(c io.Closer) {
+	if e := c.Close(); e != nil {
+		fmt.Println(e)
+	}
+}
+
+func SafeRemoveFile(path string) {
+	if err := os.Remove(path); err != nil {
+		fmt.Println(err)
+	}
+}
 
 func CmdRun(cmd string, args []string, defaultCmd string, defaultArgs []string) error {
 	if cmd == "" {
@@ -42,7 +55,7 @@ func SaveStringToFile(path, content string) error {
 		log.Println(err)
 		return err
 	}
-	defer out.Close()
+	defer SafeClose(out)
 	_, err = io.Copy(out, strings.NewReader(content))
 	if err != nil {
 		log.Println(err)
@@ -57,13 +70,13 @@ func DownloadUrlToFile(file, url string) error {
 		log.Println(err)
 		return err
 	}
-	defer resp.Body.Close()
+	defer SafeClose(resp.Body)
 	out, err := os.Create(file)
 	if err != nil {
 		log.Println(err)
 		return err
 	}
-	defer out.Close()
+	defer SafeClose(out)
 	_, err = io.Copy(out, resp.Body)
 	if err != nil {
 		log.Println(err)

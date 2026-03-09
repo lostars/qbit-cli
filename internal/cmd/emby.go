@@ -3,7 +3,6 @@ package cmd
 import (
 	"errors"
 	"fmt"
-	"github.com/spf13/cobra"
 	"log"
 	"net/url"
 	"qbit-cli/internal/api"
@@ -11,6 +10,8 @@ import (
 	"qbit-cli/pkg/utils"
 	"strconv"
 	"strings"
+
+	"github.com/spf13/cobra"
 )
 
 func EmbyCmd() *cobra.Command {
@@ -145,9 +146,10 @@ func ItemList() *cobra.Command {
 			"StartIndex": []string{strconv.FormatInt(int64(start), 10)},
 			"Fields":     []string{"PremiereDate", "ProductionYear", "Overview", "DateCreated", "People", "ProviderIds"},
 		}
-		if hasOverview == 1 {
+		switch hasOverview {
+		case 1:
 			params.Add("HasOverview", "true")
-		} else if hasOverview == 0 {
+		case 0:
 			params.Add("HasOverview", "false")
 		}
 		if includeItemTypes.Value != "" {
@@ -199,10 +201,10 @@ func ItemList() *cobra.Command {
 		var noPeopleList []api.EmbyItem
 		var noBackdropList []api.EmbyItem
 		for i, item := range items.Items {
-			if item.People == nil || len(item.People) <= 0 {
+			if len(item.People) <= 0 {
 				noPeopleList = append(noPeopleList, item)
 			}
-			if item.BackdropImageTags == nil || len(item.BackdropImageTags) <= 0 {
+			if len(item.BackdropImageTags) <= 0 {
 				noBackdropList = append(noBackdropList, item)
 			}
 			create := ""

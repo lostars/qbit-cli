@@ -92,12 +92,12 @@ type MediaStreams struct {
 }
 
 func (item *EmbyItem) MediaVideoStream() *[]MediaStreams {
-	if item.MediaSources == nil || len(item.MediaSources) == 0 {
+	if len(item.MediaSources) == 0 {
 		return nil
 	}
 	var streams []MediaStreams
 	for _, source := range item.MediaSources {
-		if source.MediaStreams == nil || len(source.MediaStreams) == 0 {
+		if len(source.MediaStreams) == 0 {
 			return nil
 		}
 		for _, stream := range source.MediaStreams {
@@ -117,7 +117,7 @@ func (item *EmbyItem) MediaVideoSourceCount() int {
 }
 
 func (item *EmbyItem) MediaVideoSourceSizeView() []string {
-	if item.MediaSources == nil || len(item.MediaSources) == 0 {
+	if len(item.MediaSources) == 0 {
 		return nil
 	}
 	var result []string

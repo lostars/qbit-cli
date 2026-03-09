@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/spf13/cobra"
 	"io"
 	"log"
 	"net/http"
@@ -21,6 +20,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/spf13/cobra"
 )
 
 type Gofile struct {
@@ -41,7 +42,7 @@ func (r *Gofile) Description() string {
 	return `Resolve Gofile file share url and download.`
 }
 
-func (_ *Gofile) Tags() []string {
+func (r *Gofile) Tags() []string {
 	return []string{"resolver"}
 }
 
@@ -121,7 +122,7 @@ func (r *Gofile) getTraffic() (*GofileTrafficResp, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer utils.SafeClose(resp.Body)
 
 	var traffic GofileTrafficResp
 	err = json.NewDecoder(resp.Body).Decode(&traffic)
@@ -247,7 +248,7 @@ func (r *Gofile) setAuth() error {
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
+	defer utils.SafeClose(resp.Body)
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
@@ -269,7 +270,7 @@ func (r *Gofile) setAuth() error {
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
+	defer utils.SafeClose(resp.Body)
 	var gofileToken GofileTokenResp
 	err = json.NewDecoder(resp.Body).Decode(&gofileToken)
 	if err != nil {
@@ -346,7 +347,7 @@ func (r *Gofile) getFiles() *GofileContentsResp {
 		log.Println(err)
 		return nil
 	}
-	defer resp.Body.Close()
+	defer utils.SafeClose(resp.Body)
 
 	var contents GofileContentsResp
 	err = json.NewDecoder(resp.Body).Decode(&contents)

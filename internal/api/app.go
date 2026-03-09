@@ -2,6 +2,7 @@ package api
 
 import (
 	"net/url"
+	"qbit-cli/pkg/utils"
 )
 
 func QbitAppBuildInfo() (*QbitServerInfo, error) {
@@ -9,7 +10,7 @@ func QbitAppBuildInfo() (*QbitServerInfo, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer utils.SafeClose(resp.Body)
 	var info QbitServerInfo
 	err = ParseJSON(resp, &info)
 	if err != nil {
@@ -23,7 +24,7 @@ func QbitApiVersion() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	defer resp.Body.Close()
+	defer utils.SafeClose(resp.Body)
 	v, err := ParseString(resp)
 	if err != nil {
 		return "", err
@@ -36,7 +37,7 @@ func QbitAppVersion() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	defer resp.Body.Close()
+	defer utils.SafeClose(resp.Body)
 	v, err := ParseString(resp)
 	if err != nil {
 		return "", err
@@ -49,7 +50,7 @@ func QbitAppPreference() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	defer resp.Body.Close()
+	defer utils.SafeClose(resp.Body)
 	json, err := ParseRawJSON(resp)
 	if err != nil {
 		return "", err
@@ -64,6 +65,6 @@ func QbitSetAppPreference(json string) error {
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
+	defer utils.SafeClose(resp.Body)
 	return nil
 }

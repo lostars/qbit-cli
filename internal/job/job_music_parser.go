@@ -3,7 +3,6 @@ package job
 import (
 	"errors"
 	"fmt"
-	"github.com/spf13/cobra"
 	"log"
 	"net/http"
 	"os"
@@ -13,6 +12,8 @@ import (
 	"qbit-cli/pkg/utils"
 	"strings"
 	"time"
+
+	"github.com/spf13/cobra"
 )
 
 type MusicParser struct {
@@ -218,7 +219,7 @@ func (m *SongMetadata) saveWithFFMPEG(file string) {
 	if m.Name != "" {
 		args = append(args, "-metadata", fmt.Sprintf("Title=%s", m.Name))
 	}
-	if m.Artists != nil && len(m.Artists) > 0 {
+	if len(m.Artists) > 0 {
 		args = append(args, "-metadata", fmt.Sprintf("Artist=%s", strings.Join(m.Artists, ",")))
 	}
 	if m.AlbumName != "" {

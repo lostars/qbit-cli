@@ -49,21 +49,6 @@ func CmdRun(cmd string, args []string, defaultCmd string, defaultArgs []string) 
 	return nil
 }
 
-func SaveStringToFile(path, content string) error {
-	out, err := os.Create(path)
-	if err != nil {
-		log.Println(err)
-		return err
-	}
-	defer SafeClose(out)
-	_, err = io.Copy(out, strings.NewReader(content))
-	if err != nil {
-		log.Println(err)
-		return err
-	}
-	return nil
-}
-
 func DownloadUrlToFile(file, url string) error {
 	resp, err := http.Get(url)
 	if err != nil {
@@ -139,10 +124,6 @@ func AESEncryptECB(data, key []byte) ([]byte, error) {
 	enc := make([]byte, len(data))
 	ecb.CryptBlocks(enc, data)
 	return enc, nil
-}
-
-func TruncateStringFromStart(str string, l int) string {
-	return TruncateString(str, 0, l)
 }
 
 func TruncateString(str string, start int, end int) string {
@@ -379,9 +360,9 @@ func (m *InteractiveTableModel) View() string {
 
 	if m.notifyMsg != nil && m.notifyMsg.Msg != "" {
 		return fmt.Sprintf("%s\n%s\n%s", ta.String(), desc, m.notifyMsg.Msg)
-	} else {
-		return fmt.Sprintf("%s\n%s\n", ta.String(), desc)
 	}
+
+	return fmt.Sprintf("%s\n%s\n", ta.String(), desc)
 }
 
 const (
@@ -418,7 +399,7 @@ func FormatFileSizeAuto(bytes uint64, decimal int) string {
 			zero = append(zero, "0")
 		}
 		return strings.TrimSuffix(str, strings.Join(zero, "")) + unit
-	} else {
-		return str + unit
 	}
+
+	return str + unit
 }

@@ -4,7 +4,6 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"log"
 	"net/http"
@@ -27,7 +26,7 @@ type Gofile struct {
 	savePath            string
 	client              *http.Client
 	url, code, password string
-	wt, token           string
+	token               string
 }
 
 var gofile Gofile
@@ -69,7 +68,7 @@ func GofileTrafficCmd() *cobra.Command {
 			return err
 		}
 		if traffic.Status != "ok" || traffic.Data.IpTraffic == nil {
-			return errors.New("traffic return " + traffic.Status)
+			return fmt.Errorf("traffic return %s", traffic.Status)
 		}
 
 		var start = time.Now().AddDate(0, -1, 0)
@@ -162,15 +161,15 @@ If you're using a shared IP address, this may include additional traffic beyond 
 		l := args[0]
 		// valid url like https://gofile.io/d/xxx
 		if !strings.Contains(l, "/d/") {
-			return errors.New("unknown url")
+			return fmt.Errorf("unknown url")
 		}
 		u, err := url.Parse(l)
 		if err != nil {
-			return errors.New("unknown url")
+			return fmt.Errorf("unknown url")
 		}
 		gofile.code = path.Base(u.Path)
 		if gofile.code == "" {
-			return errors.New("invalid url")
+			return fmt.Errorf("invalid url")
 		}
 		gofile.url = l
 		gofile.client = buildGofileHttpClient()
@@ -188,13 +187,13 @@ If you're using a shared IP address, this may include additional traffic beyond 
 
 		var contents = gofile.getFiles()
 		if contents == nil {
-			return errors.New("failed to get files")
+			return fmt.Errorf("failed to get files")
 		}
 		if contents.Status != "ok" {
-			return errors.New("contents return " + contents.Status)
+			return fmt.Errorf("contents return %s", contents.Status)
 		}
 		if len(contents.Data.Children) <= 0 {
-			return errors.New("contents is empty, maybe need a password")
+			return fmt.Errorf("contents is empty, maybe need a password")
 		}
 
 		downloader := utils.HttpFileDownloader{

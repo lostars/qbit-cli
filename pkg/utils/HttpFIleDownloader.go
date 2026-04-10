@@ -129,6 +129,7 @@ func (d *HttpFileDownloader) SingleThreadDownload(url, newName string) error {
 	if err != nil {
 		return err
 	}
+	defer SafeClose(out)
 	req, err := d.buildRequest(url, http.MethodGet)
 	if err != nil {
 		return err
@@ -208,9 +209,8 @@ func (d *HttpFileDownloader) Download(url, newName string) error {
 	if !headInfo.ResumeAvailable() {
 		d.DebugLogger.Println("fallback to single thread download")
 		return d.SingleThreadDownload(url, newName)
-	} else {
-		d.DebugLogger.Println("server support range download")
 	}
+	d.DebugLogger.Println("server support range download")
 
 	// range download
 	var fullName = path.Join(d.SavePath, newName)

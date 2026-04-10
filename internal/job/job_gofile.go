@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
 	"log"
 	"net/http"
 	"net/url"
@@ -15,7 +14,6 @@ import (
 	"qbit-cli/internal/api"
 	"qbit-cli/internal/config"
 	"qbit-cli/pkg/utils"
-	"regexp"
 	"sort"
 	"strconv"
 	"strings"
@@ -178,12 +176,9 @@ If you're using a shared IP address, this may include additional traffic beyond 
 		gofile.client = buildGofileHttpClient()
 
 		/*
-
 			1. Get token from https://api.gofile.io/accounts
-			2. Get wt(a hard code string) from https://gofile.io/dist/js/global.js
-			3. Get file list from https://api.gofile.io/contents/xxx?wt=yyy
-			4. Download files
-
+			2. Get file download url from https://api.gofile.io/contents/xxx?contentFilter=&page=1&pageSize=1000&sortField=name&sortDirection=1
+			3. Download files with cookie(cookie accountToken=xxx) from phase 1 and X-Website-Token(wt) and X-BL(language)
 		*/
 
 		err = gofile.setAuth()
@@ -207,7 +202,7 @@ If you're using a shared IP address, this may include additional traffic beyond 
 			MaxWorker: gofile.maxWorker,
 			Client:    gofile.client,
 			Headers: map[string]string{
-				"Authorization": "Bearer " + gofile.token,
+				"Cookie": "accountToken=" + gofile.token,
 			},
 		}
 		if config.Debug {
@@ -239,34 +234,31 @@ If you're using a shared IP address, this may include additional traffic beyond 
 	return cmd
 }
 
+func setReq(req *http.Request) {
+	req.Header.Set("Referer", "https://gofile.io/")
+	req.Header.Set("Origin", "https://gofile.io")
+	req.Header.Set("User-Agent", ua)
+}
+
+var ua = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36"
+var salt = "5d4f7g8sd45fsd"
+var language = "en-US"
+
+// from https://gofile.io/dist/js/wt.obf.js
+func (r *Gofile) generateWT() string {
+	timestamp := time.Now().Unix() / 14400
+	rawString := fmt.Sprintf("%s::%s::%s::%d::%s", ua, language, r.token, timestamp, salt)
+
+	hash := sha256.Sum256([]byte(rawString))
+	return fmt.Sprintf("%x", hash)
+}
+
 func (r *Gofile) setAuth() error {
-
-	// set wt
-	var wtJS = "https://gofile.io/dist/js/global.js"
-	req, _ := http.NewRequest(http.MethodGet, wtJS, nil)
-	resp, err := r.client.Do(req)
-	if err != nil {
-		return err
-	}
-	defer utils.SafeClose(resp.Body)
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return err
-	}
-	content := string(body)
-
-	match := regexp.MustCompile(`appdata\.wt.*"(.*)"`).FindStringSubmatch(content)
-	if len(match) <= 1 {
-		return errors.New("wt get failed")
-	}
-	r.wt = match[1]
-	log.Printf("wt: %s\n", r.wt)
-
 	// set token
 	var tokenUrl = "https://api.gofile.io/accounts"
 	tokenReq, _ := http.NewRequest(http.MethodPost, tokenUrl, nil)
-	resp, err = r.client.Do(tokenReq)
+	setReq(tokenReq)
+	resp, err := r.client.Do(tokenReq)
 	if err != nil {
 		return err
 	}
@@ -279,7 +271,7 @@ func (r *Gofile) setAuth() error {
 	}
 	r.token = gofileToken.Data.Token
 	if r.token == "" {
-		return errors.New("token get failed")
+		return fmt.Errorf("token get failed: %s", resp.Status)
 	}
 	return nil
 }
@@ -330,7 +322,7 @@ func (r *Gofile) getFiles() *GofileContentsResp {
 
 	var contentsApi = "https://api.gofile.io/contents/" + r.code
 	var params = url.Values{
-		"wt":            {r.wt},
+		"contentFilter": {""},
 		"page":          {"1"},
 		"pageSize":      {"1000"},
 		"sortField":     {"name"},
@@ -341,7 +333,12 @@ func (r *Gofile) getFiles() *GofileContentsResp {
 		params.Set("password", hex.EncodeToString(sumBytes[:]))
 	}
 	req, _ := http.NewRequest(http.MethodGet, contentsApi+"?"+params.Encode(), nil)
+
+	setReq(req)
 	req.Header.Set("Authorization", "Bearer "+r.token)
+	req.Header.Set("X-Website-Token", r.generateWT())
+	req.Header.Set("X-BL", language)
+
 	resp, err := r.client.Do(req)
 	if err != nil {
 		log.Println(err)

@@ -1,9 +1,10 @@
 package config
 
 import (
-	"gopkg.in/yaml.v3"
 	"os"
 	"path/filepath"
+
+	"gopkg.in/yaml.v3"
 )
 
 var (
@@ -17,6 +18,7 @@ type Config struct {
 		Host     string `yaml:"host" validate:"required"`
 		Username string `yaml:"username"`
 		Password string `yaml:"password"`
+		Token    string `yaml:"token"`
 	} `yaml:"server"`
 
 	Torrent struct {

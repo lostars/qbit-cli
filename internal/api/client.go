@@ -12,6 +12,7 @@ import (
 	"os"
 	"path/filepath"
 	"qbit-cli/internal/config"
+	"qbit-cli/pkg/utils"
 	"strings"
 	"time"
 )
@@ -75,6 +76,9 @@ func (c *QbitClient) user() string {
 }
 func (c *QbitClient) pwd() string {
 	return c.Config.Server.Password
+}
+func (c *QbitClient) token() string {
+	return c.Config.Server.Token
 }
 
 type JackettClient struct {
@@ -324,6 +328,12 @@ func (c *QbitClient) PostForm(endpoint string, params url.Values, fields string,
 
 func (c *QbitClient) login() {
 
+	// compatible latest version(>=5.20)
+	if c.token() != "" {
+		c.Headers["Authorization"] = fmt.Sprintf("Bearer %s", c.token())
+		return
+	}
+
 	if c.Headers["Cookie"] != "" {
 		return
 	}
@@ -337,6 +347,7 @@ func (c *QbitClient) login() {
 	if err != nil {
 		panic(err)
 	}
+	defer utils.SafeClose(resp.Body)
 
 	if resp.StatusCode != http.StatusOK {
 		panic("login failed")

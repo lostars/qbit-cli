@@ -42,6 +42,7 @@ type Config struct {
 
 	NeteaseMusicCookie string `yaml:"netease_music_cookie"`
 	QQMusicCookie      string `yaml:"qq_music_cookie"`
+	Flaresolverr       string `yaml:"flaresolverr"`
 }
 
 func loadDefaultConfig() []byte {
@@ -63,6 +64,10 @@ func loadDefaultConfig() []byte {
 		}
 	}
 	return nil
+}
+
+func (c *Config) ConfigPath() string {
+	return CfgPath
 }
 
 func GetConfig() *Config {

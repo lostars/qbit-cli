@@ -204,8 +204,10 @@ type InteractiveTableModel struct {
 }
 
 type NotifyMsg struct {
-	Msg      string
-	Duration time.Duration
+	Msg        string
+	Duration   time.Duration
+	UpdateData bool
+	PendingMsg string
 }
 
 type KeyMsgDelegateModel struct {
@@ -215,7 +217,9 @@ type KeyMsgDelegateModel struct {
 
 type ClearNotifyMsg struct{}
 
-type RowUpdateMsg struct{}
+type RowUpdateMsg struct {
+	Static bool
+}
 
 type InteractiveKeyMsgDelegate interface {
 	Operation(msg tea.KeyMsg, cursor int) *KeyMsgDelegateModel
@@ -259,6 +263,9 @@ func (m *InteractiveTableModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.Header = headers
 		}
 		m.Rows = data
+		if msg.Static {
+			return m, nil
+		}
 		return m, tea.Tick(m.DataDelegate.Frequency(), func(t time.Time) tea.Msg {
 			return RowUpdateMsg{}
 		})
@@ -275,14 +282,22 @@ func (m *InteractiveTableModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		switch msg.String() {
 		default:
 			if m.Delegate != nil {
-				model := m.Delegate.Operation(msg, m.cursor)
-				if model != nil {
-					if model.RenderClicked {
-						m.clickedMap[m.cursor] = true
-					}
-					return m, func() tea.Msg {
+				return m, func() tea.Msg {
+					model := m.Delegate.Operation(msg, m.cursor)
+					if model != nil {
+						// static data update msg
+						if model.NotifyMsg.UpdateData {
+							return func() tea.Msg {
+								return RowUpdateMsg{Static: true}
+							}
+						}
+						// normal msg
+						if model.RenderClicked {
+							m.clickedMap[m.cursor] = true
+						}
 						return model.NotifyMsg
 					}
+					return nil
 				}
 			}
 		case "up", "k":

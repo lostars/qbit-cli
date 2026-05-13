@@ -3,6 +3,7 @@ package job
 import (
 	"fmt"
 	"log"
+	"net/http"
 	"net/url"
 	"qbit-cli/internal/api"
 	"qbit-cli/internal/api/emby"
@@ -53,6 +54,8 @@ func (j *JP4K) RunCommand() *cobra.Command {
 		maxParallelism                int
 		parentId                      int
 	)
+	var bt4gMode bool
+	cmd.Flags().BoolVar(&bt4gMode, "bt4g", false, "search bt4g")
 
 	saveCategory := c.FlagsProperty[string]{Flag: "save-category", Register: &c.TorrentCategoryFlagRegister{}}
 	plugins := c.FlagsProperty[string]{Flag: "plugins", Register: &c.TorrentPluginsFlagRegister{}}
@@ -102,6 +105,14 @@ this option will find all jp video's 4k version which is filter by extra jp code
 			fmt.Println("no 4k items found")
 			return nil
 		}
+		if bt4gMode {
+			maxParallelism = 1
+		}
+		bt4gClient := &BT4G{
+			client: &http.Client{
+				Timeout: time.Second * 180,
+			},
+		}
 
 		var wg sync.WaitGroup
 		var mu sync.Mutex
@@ -112,6 +123,8 @@ this option will find all jp video's 4k version which is filter by extra jp code
 			go func(i int) {
 				defer wg.Done()
 				limit <- struct{}{}
+				defer func() { <-limit }()
+
 				item := items[i]
 				// parse code from name
 				matches := JPCodeRegex.FindStringSubmatch(item.Name)
@@ -120,6 +133,30 @@ this option will find all jp video's 4k version which is filter by extra jp code
 				}
 				jpCode := matches[1]
 				fmt.Printf("searching 4k version of %s...\n", jpCode)
+
+				if bt4gMode {
+					result, err := bt4gClient.sendRequest(fmt.Sprintf("%s/search?q=%s&orderby=size", bt4gUrl, jpCode))
+					if err != nil {
+						fmt.Println(err.Error())
+						return
+					}
+
+					for _, r := range parseList(result) {
+						if !JP4KRegex.MatchString(r.Title) {
+							continue
+						}
+						magnet := bt4gClient.download(r.Url)
+						if magnet == "" {
+							fmt.Println(fmt.Sprintf("bt4g [%s] get failed:", r.Url))
+							continue
+						}
+						data = append(data, &api.SearchDetail{
+							FileName: r.Title,
+							FileURL:  magnet,
+						})
+					}
+					return
+				}
 
 				params := url.Values{
 					"pattern":  {jpCode},
@@ -146,7 +183,6 @@ this option will find all jp video's 4k version which is filter by extra jp code
 						mu.Unlock()
 					}
 				}
-				<-limit
 			}(i)
 		}
 		wg.Wait()

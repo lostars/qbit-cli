@@ -167,7 +167,7 @@ func parseJPCode(fileName string, folder string) string {
 
 	matches = JP4KRegex.FindStringSubmatch(fileName)
 	if len(matches) > 2 {
-		jpCode += "-" + matches[2]
+		jpCode += "-4K"
 	}
 
 	if JPCNRegex.MatchString(fileName) {
@@ -191,6 +191,6 @@ func parseJPName(fileName string, folder string) string {
 }
 
 var JPCodeRegex = regexp.MustCompile(`([a-zA-Z]{2,5}-[0-9]{3,5}|FC2-PPV-\d{5,})`)
-var JP4KRegex = regexp.MustCompile(`([-\[])(4[kK])`)
+var JP4KRegex = regexp.MustCompile(`(([-\[])(4[kK])|_4KS$)`)
 var JPPartsRegex = regexp.MustCompile(`\d+(-4K)?(-cd|[-_])([1-5])[^kK]`)
 var JPCNRegex = regexp.MustCompile(`\d+(-[cC]|ch)`)
